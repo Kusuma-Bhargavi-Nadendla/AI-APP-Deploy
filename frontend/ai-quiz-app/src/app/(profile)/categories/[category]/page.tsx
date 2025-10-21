@@ -24,15 +24,20 @@ interface QuizLandingData {
   description: string;
   questionsCount?: number;
   timeLimit?: number;
+  categoryId?:string;
 }
 
 async function fetchSubcategories(
   categoryTitle: string,
   existingSubcategories: string[] = []
 ): Promise<Subcategory[]> {
-  const res = await fetch("http://localhost:5000/subcategories", {
+  const token = localStorage.getItem('token');
+  const res = await fetch("http://localhost:5000/categories/subcategories", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       category: categoryTitle,
       existingSubcategories,
@@ -42,7 +47,8 @@ async function fetchSubcategories(
   if (!res.ok) throw new Error("Failed to fetch subcategories");
 
   const result = await res.json();
-  return result.response.map((item: any) => ({
+  const data=result.data;
+  return data.map((item: any) => ({
     id: item.id,
     name: item.name,
     description: item.description,
@@ -86,19 +92,24 @@ export default function CategoryClient({ params }: PageProps) {
       setIsLoading(true);
 
       searchTimeoutRef.current = setTimeout(async () => {
+        const token = localStorage.getItem('token');
         try {
           const res = await fetch(
-            "http://localhost:5000/subcategories/search",
+            "http://localhost:5000/categories/subcategories/search",
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
               body: JSON.stringify({ categoryTitle, query }),
             }
           );
 
           if (res.ok) {
             const result = await res.json();
-            const searchData = await result.response;
+            // const searchData = await result.response;
+            const searchData=result.data;
             console.log(searchData);
             const mappedSearchResults = [...searchData].map((item: any) => ({
               id: item.id,
@@ -189,21 +200,25 @@ export default function CategoryClient({ params }: PageProps) {
       observer.disconnect();
     };
   }, [isLoading, loadMoreSubCategories]);
+  const categoryId=localStorage.getItem('categoryId')??"";
 
   const handleStartTest = (subcategory: Subcategory) => {
     console.log("Starting test for:", subcategory.name);
     const quizData: QuizLandingData = {
+      categoryId,
       categoryTitle: decodedCategoryTitle,
       subcategoryTitle: subcategory.name,
       description: `Test your knowledge in ${subcategory.description} with this comprehensive quiz.`,
-      questionsCount: 5,
+      questionsCount: 3,
+
     };
+
     const quizId = `quiz_${Date.now()}`;
     localStorage.setItem(quizId, JSON.stringify(quizData));
     router.push(`/quiz/${quizId}`);
   };
 
-  const decodedCategoryTitle = decodeURIComponent(categoryTitle).replace(/-/g," ");
+  const decodedCategoryTitle = decodeURIComponent(categoryTitle).replace(/-/g, " ");
 
   return (
     <div className="min-h-screen bg-white">
@@ -264,7 +279,7 @@ export default function CategoryClient({ params }: PageProps) {
               {isLoading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="flex items-center gap-3 text-slate-600">
-                    <MagicSearchLoader/>
+                    <MagicSearchLoader />
                   </div>
                 </div>
               ) : (
@@ -320,7 +335,7 @@ export default function CategoryClient({ params }: PageProps) {
                     <></>
                   ) : (
                     <div className="text-center py-8">
-                      <MagicSearchLoader/>
+                      <MagicSearchLoader />
                     </div>
                   )}
                 </div>

@@ -1,6 +1,6 @@
 export const validateToken = async (token: string): Promise<boolean> => {
   try {
-    const response = await fetch('http://localhost:5000/validate-auth-token', {
+    const response = await fetch('http://localhost:5000/auth/validate-auth-token', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

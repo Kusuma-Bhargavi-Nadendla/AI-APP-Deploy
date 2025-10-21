@@ -26,7 +26,9 @@ export default function FlipAuthCard() {
   });
 
   useEffect(() => {
+    console.log("FlipAuthCard mounted");
   const checkToken = async () => {
+    console.log("Checking token validity at FlipAuthCard");
     const token = localStorage.getItem('token');
     if (token) {
       const isValid = await validateToken(token);
@@ -47,7 +49,7 @@ export default function FlipAuthCard() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/login", {
+      const response = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,9 +87,15 @@ export default function FlipAuthCard() {
       setIsLoading(false);
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(registerFormData.email)) {
+         setError('Please provide valid email address');
+         setIsLoading(false);
+         return;
+      }
 
     try {
-      const response = await fetch('http://localhost:5000/register', {
+      const response = await fetch('http://localhost:5000/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +110,7 @@ export default function FlipAuthCard() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.error || 'Registration failed');
       }
 
       setIsSuccess(true);
@@ -236,6 +244,7 @@ export default function FlipAuthCard() {
                 onChange={(e) =>
                   setRegisterFormData({ ...registerFormData, email: e.target.value })
                 }
+                required
               />
             </div>
 

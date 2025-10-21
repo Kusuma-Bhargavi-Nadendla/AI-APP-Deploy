@@ -52,10 +52,10 @@ export default function DashboardLayout({
                 const decoded: { id: string; name: string } = jwtDecode(jwtToken);
                 setUserName(decoded.name);
             } catch (error) {
-                router.push("/login");
+                router.push("/");
             }
         } else {
-            router.push("/login");
+            router.push("/");
             return;
         }
     }, [router]);

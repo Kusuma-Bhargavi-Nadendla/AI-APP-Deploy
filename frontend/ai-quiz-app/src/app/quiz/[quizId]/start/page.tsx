@@ -6,11 +6,18 @@ import useSpeechToText, { ResultType } from "react-hook-speech-to-text";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
  
-interface QuizLandingData {
+// interface QuizLandingData {
+//   categoryTitle: string;
+//   subcategoryTitle: string;
+// }
+ interface QuizLandingData {
   categoryTitle: string;
   subcategoryTitle: string;
+  description: string;
+  questionsCount?: number;
+  timeLimit?: number;
+  categoryId?:string;
 }
- 
 interface AIQuestion {
   questionText: string;
   options: string[];
@@ -24,6 +31,7 @@ interface QuizSessionData {
   categoryTitle: string;
   subcategoryTitle: string;
   totalQuestions: number;
+  categoryId?:string;
 }
  
 export default function QuizPage({
@@ -91,9 +99,13 @@ export default function QuizPage({
  
         const res = await fetch("http://localhost:5000/quiz/start", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+           headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
           body: JSON.stringify({
             userId: decoded.id,
+            categoryId:quizData.categoryId,
             categoryTitle: quizData.categoryTitle,
             subcategoryTitle: quizData.subcategoryTitle,
             questionsCount: 3,
@@ -105,15 +117,16 @@ export default function QuizPage({
           throw new Error(err.error || "Failed to start quiz");
         }
  
-        const data = await res.json();
-        if (!data.question || !data.quizId) {
+        const response = await res.json();
+        if(!response.success){
           throw new Error("Invalid quiz start response");
         }
- 
+        const data=response.data;
         setCurrentQuestion(data.question);
         setQuizSession({
           quizId: data.quizId,
           userId: decoded.id,
+          categoryId:quizData.categoryId,
           categoryTitle: quizData.categoryTitle,
           subcategoryTitle: quizData.subcategoryTitle,
           totalQuestions: 3,
@@ -144,6 +157,7 @@ export default function QuizPage({
         quizData: {
           quizId: quizSession.quizId,
           userId: quizSession.userId,
+          categoryId:quizSession.categoryId,
           categoryTitle: quizSession.categoryTitle,
           subcategoryTitle: quizSession.subcategoryTitle,
         },
@@ -151,22 +165,31 @@ export default function QuizPage({
         userAnswer,
         progress,
       };
- 
+      console.log(payload);
+      const token = localStorage.getItem('token');
       const res = await fetch("http://localhost:5000/quiz/submit-answer", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
         body: JSON.stringify(payload),
       });
  
-      const result = await res.json();
+      const response = await res.json();
  
       if (!res.ok) {
-        throw new Error(result.error || "Submission failed");
+        throw new Error(response.error || "Submission failed");
       }
-      console.log(result);
+
+      console.log(response);
+      const result=response.data;
       //  Quiz completed
       if (result.quizCompleted) {
-        alert(`Quiz finished! Final score: ${result.finalScore}`);
+        localStorage.setItem(
+          quizSession.quizId,
+          JSON.stringify({ ...quizSession, finalScore: result.finalScore })
+        );
         router.push(`/results/${quizSession.quizId}`);
         return;
       } else {

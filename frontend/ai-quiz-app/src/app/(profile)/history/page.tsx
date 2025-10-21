@@ -59,15 +59,19 @@ export default function AnalyticsPage() {
             const decoded: any = JSON.parse(atob(token.split('.')[1]))
             const userId = decoded.id
 
-            const response = await fetch('http://localhost:5000/quiz/analytics', {
+            const response = await fetch('http://localhost:5000/analytics/user', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ userId })
             })
 
             if (!response.ok) throw new Error('Failed to fetch')
 
-            const data = await response.json()
+            const result = await response.json();
+            const data = result.data;
             setAnalytics(data)
         } catch (error) {
             console.error('Error:', error)
@@ -299,7 +303,7 @@ export default function AnalyticsPage() {
                                         className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
                                         onMouseOver={() => setExpandedCategory(category.category)}
                                         onMouseOut={() => setExpandedCategory(null)}
-                                        
+
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-medium text-gray-900">{toTitleCase(category.category)}</span>

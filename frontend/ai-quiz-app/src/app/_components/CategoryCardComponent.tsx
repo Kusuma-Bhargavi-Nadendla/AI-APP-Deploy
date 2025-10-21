@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, TrendingUp } from "lucide-react";
 
 interface CategoryCardProps {
+  categoryId?:string;
   categoryTitle: string;
   description?: string;
   trending?: boolean;
@@ -15,6 +16,7 @@ interface CategoryCardProps {
 }
 
 export default function CategoryCardComponent({
+  categoryId,
   categoryTitle,
   description,
   trending = false,
@@ -27,6 +29,7 @@ export default function CategoryCardComponent({
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
+    localStorage.setItem('categoryId',JSON.stringify(categoryId));
     router.push(`/categories/${slug}`);
   };
 
@@ -56,7 +59,7 @@ export default function CategoryCardComponent({
         <Button 
           size="sm" 
           onClick={handleArrowClick}
-          className="bg-blue-800 hover:bg-blue-900 text-white rounded-full w-10 h-10 p-0 group-hover:scale-110 transition-transform duration-300 shadow-md"
+          className="bg-blue-600 hover:bg-blue-900 text-white rounded-full w-10 h-10 p-0 group-hover:scale-110 transition-transform duration-300 shadow-md"
         >
           <ArrowRight className="w-4 h-4" />
         </Button>

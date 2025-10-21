@@ -5,6 +5,7 @@ import MouseParticles from "./_lib/MouseParticles"
 
 
 export default function Home() {
+  
   return (
     <div className="h-screen bg-black flex items-center justify-center">
       <div className="absolute inset-0 bg-[url('/space-bg.gif')] bg-cover bg-center opacity-80"></div>
