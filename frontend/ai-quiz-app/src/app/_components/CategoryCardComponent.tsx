@@ -8,30 +8,25 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, TrendingUp } from "lucide-react";
 
 interface CategoryCardProps {
-  categoryId?:string;
   categoryTitle: string;
   description?: string;
   trending?: boolean;
   color?: string;
+  id?: string;
+  onArrowClick: () => void;
 }
 
 export default function CategoryCardComponent({
-  categoryId,
+  id,
   categoryTitle,
   description,
   trending = false,
   color = "bg-gradient-to-br from-white to-gray-50",
+  onArrowClick
 }: CategoryCardProps) {
   const router = useRouter();
 
-  const handleArrowClick = () => {
-    const slug = categoryTitle
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-    localStorage.setItem('categoryId',JSON.stringify(categoryId));
-    router.push(`/categories/${slug}`);
-  };
+
 
   return (
     <Card className={`${color} min-h-[180px] flex flex-col justify-between border-0 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] group cursor-pointer`}>
@@ -47,7 +42,7 @@ export default function CategoryCardComponent({
             </Badge>
           )}
         </div>
-        
+
         {description && (
           <p className="text-sm text-gray-600 leading-relaxed flex-1">
             {description}
@@ -56,9 +51,9 @@ export default function CategoryCardComponent({
       </CardContent>
 
       <CardFooter className="p-5 pt-0 flex justify-end">
-        <Button 
-          size="sm" 
-          onClick={handleArrowClick}
+        <Button
+          size="sm"
+          onClick={onArrowClick}
           className="bg-blue-600 hover:bg-blue-900 text-white rounded-full w-10 h-10 p-0 group-hover:scale-110 transition-transform duration-300 shadow-md"
         >
           <ArrowRight className="w-4 h-4" />

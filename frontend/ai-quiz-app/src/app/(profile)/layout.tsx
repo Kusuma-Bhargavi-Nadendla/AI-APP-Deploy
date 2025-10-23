@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
-
+import { appDB } from "../../lib/appDataDB";
 export default function DashboardLayout({
     children,
 }: {
@@ -44,12 +44,23 @@ export default function DashboardLayout({
         const route = navigation.find(item => item.path === pathname);
         return route ? route.name : 'Dashboard';
     };
+    // const checkUserDetails = async () => {
+    //     const userId = await appDB.getUserId();
+    //     let userDetails;
+    //     if (userId) {
+    //         userDetails = await appDB.getUser(userId);
+    //         console.log("User Details from DB:",userDetails);
+    //     }
+    // }
+    // checkUserDetails();
 
     useEffect(() => {
         const jwtToken = localStorage.getItem("token");
         if (jwtToken) {
             try {
-                const decoded: { id: string; name: string } = jwtDecode(jwtToken);
+                const decoded: { id: string; name: string, email:string } = jwtDecode(jwtToken);
+                // console.log("User details from LS:",decoded)
+
                 setUserName(decoded.name);
             } catch (error) {
                 router.push("/");
@@ -83,8 +94,8 @@ export default function DashboardLayout({
                                 key={item.name}
                                 onClick={() => router.push(item.path)}
                                 className={`w-full flex items-center py-3 px-3 my-1 rounded-xl transition-all duration-200 ${isActive
-                                        ? 'bg-blue-500 text-white shadow-lg transform translate-x-1'
-                                        : 'text-white hover:bg-white/20 hover:text-white'
+                                    ? 'bg-blue-500 text-white shadow-lg transform translate-x-1'
+                                    : 'text-white hover:bg-white/20 hover:text-white'
                                     } ${sidebarExpanded ? 'justify-start' : 'justify-center'}`}
                             >
                                 <span className="text-lg">{item.icon}</span>

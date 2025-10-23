@@ -22,6 +22,9 @@ interface AnalyticsData {
         category: string
         subcategory: string
         score: number
+        questionsCount: number
+        timeSpent: number
+        status: 'completed' | 'in-progress'
     }>
 }
 
@@ -111,6 +114,12 @@ export default function AnalyticsPage() {
                 })
             }
         }, stepDuration)
+    }
+    const handleContinue = (quizId: string) => {
+        console.log("continue quiz with id:", quizId);
+    }
+    const handlePreview = (quizId: string) => {
+        console.log("preview quiz with id:", quizId);
     }
 
     const renderLineGraph = (scores: number[], color: string) => {
@@ -255,8 +264,11 @@ export default function AnalyticsPage() {
                                     <tr className="border-b border-gray-200">
                                         <th className="text-left py-3 text-gray-600 font-medium">Date</th>
                                         <th className="text-left py-3 text-gray-600 font-medium">Category</th>
-                                        <th className="text-left py-3 text-gray-600 font-medium">Subcategory</th>
+                                        {/* <th className="text-left py-3 text-gray-600 font-medium">Subcategory</th> */}
+                                        {/* <th className="text-left py-3 text-gray-600 font-medium">No of questions</th> */}
                                         <th className="text-left py-3 text-gray-600 font-medium">Score</th>
+                                        <th className="text-left py-3 text-gray-600 font-medium">Timespent</th>
+                                        <th className="text-left py-3 text-gray-600 font-medium">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -264,16 +276,38 @@ export default function AnalyticsPage() {
                                         <tr key={quiz.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                             <td className="py-3 text-gray-600">{quiz.date}</td>
                                             <td className="py-3">
-                                                <span className="font-medium text-gray-900">{toTitleCase(quiz.category)}</span>
+                                                <span className="font-medium text-gray-900">{`${toTitleCase(quiz.category)}`}</span>
                                             </td>
-                                            <td className="py-3 text-gray-600">{toTitleCase(quiz.subcategory)}</td>
+                                            {/* <td className="py-3 text-gray-600">{toTitleCase(quiz.subcategory)}</td> */}
+                                            {/* <td className="py-3 text-gray-600">{quiz.questionsCount}</td> */}
+
                                             <td className="py-3">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${quiz.score >= 80 ? 'bg-green-100 text-green-800' :
-                                                    quiz.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
+                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${(quiz.score / (quiz.questionsCount * 10)) >= 80 ? 'bg-green-100 text-green-800' :
+                                                        (quiz.score / (quiz.questionsCount * 10)) >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-red-100 text-red-800'
                                                     }`}>
-                                                    {quiz.score}%
+                                                    {Math.round((quiz.score / (quiz.questionsCount * 10)) * 100)}%
                                                 </span>
+                                            </td>
+
+                                            <td className="py-3 text-gray-600">{quiz.timeSpent || '-'}</td>
+
+                                            <td className="py-3">
+                                                {quiz.status === 'completed' ? (
+                                                    <button
+                                                        onClick={() => handlePreview(quiz.id)}
+                                                        className="px-3 py-1 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
+                                                    >
+                                                        Preview
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleContinue(quiz.id)}
+                                                        className="px-3 py-1 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 transition-colors"
+                                                    >
+                                                        Continue
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { cn } from "../_lib/utils";
 import { useRouter } from 'next/navigation';
-import {validateToken} from '../_lib/validateAuth';
+import { validateToken } from '../_lib/validateAuth';
+import { appDB } from "../../lib/appDataDB";
+import { jwtDecode } from 'jwt-decode';
 
 export default function FlipAuthCard() {
 
@@ -12,7 +14,7 @@ export default function FlipAuthCard() {
   const [error, setError] = useState("");
   const [isFlipped, setIsFlipped] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const [loginFormData, setLoginFormData] = useState({
     email: "",
     password: "",
@@ -27,21 +29,29 @@ export default function FlipAuthCard() {
 
   useEffect(() => {
     console.log("FlipAuthCard mounted");
-  const checkToken = async () => {
-    console.log("Checking token validity at FlipAuthCard");
-    const token = localStorage.getItem('token');
-    if (token) {
-      const isValid = await validateToken(token);
-      if (isValid) {
-        router.replace('/home');
-      } else {
-        localStorage.removeItem('token');
+    const checkToken = async () => {
+      console.log("Checking token validity at FlipAuthCard");
+      const token = localStorage.getItem('token');
+      if (token) {
+        const isValid = await validateToken(token);
+        if (isValid) {
+          router.replace('/home');
+        } else {
+          localStorage.removeItem('token');
+        }
       }
-    }
-  };
-  
-  checkToken();
-}, [router]);
+    };
+
+    checkToken();
+  }, [router]);
+
+  const setUserDetailsDB = async ({id,name,email}:{id:string,name:string,email:string}) => {
+    await appDB.setUserLogin({
+      userId: id,
+      name: name,
+      email:email
+    });
+  }
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +79,8 @@ export default function FlipAuthCard() {
         }
       }
       localStorage.setItem('token', data.token);
+      setUserDetailsDB(data.user);
+
       router.replace("/home");
     } catch (err: any) {
       setError(err.message || 'Something went wrong during login. Please try again.');
@@ -88,11 +100,11 @@ export default function FlipAuthCard() {
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(registerFormData.email)) {
-         setError('Please provide valid email address');
-         setIsLoading(false);
-         return;
-      }
+    if (!emailRegex.test(registerFormData.email)) {
+      setError('Please provide valid email address');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('http://localhost:5000/auth/register', {
@@ -116,7 +128,7 @@ export default function FlipAuthCard() {
       setIsSuccess(true);
       setIsFlipped(false);
       setError("");
-      
+
     } catch (err: any) {
       setError(err.message || 'Something went wrong during registration. Please try again.');
     } finally {
@@ -183,8 +195,8 @@ export default function FlipAuthCard() {
           </div>
 
           <div className="space-y-4">
-            <button 
-              disabled={isLoading} 
+            <button
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
               onClick={handleLoginSubmit}
             >
@@ -280,7 +292,7 @@ export default function FlipAuthCard() {
           </div>
 
           <div className="space-y-3">
-            <button 
+            <button
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm disabled:opacity-50"
               onClick={handleRegisterSubmit}

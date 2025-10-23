@@ -1,15 +1,15 @@
 import Quiz from "../models/Quiz"
 import QuizRecord from "../models/QuizRecord"
 import { AIService } from "./aiService"
-import { QUESTION_TYPES , QUIZ_STATUS, QUIZ_QUESTIONS_COUNT} from "../types"
+import { QUESTION_TYPES, QUIZ_STATUS, QUIZ_QUESTIONS_COUNT } from "../types"
 
 export class QuizService {
   static async startQuiz(
-    userId: string, 
-    categoryId: string, 
-    categoryTitle: string, 
-    subcategoryTitle: string, 
-    questionsCount= QUIZ_QUESTIONS_COUNT.THREE,
+    userId: string,
+    categoryId: string,
+    categoryTitle: string,
+    subcategoryTitle: string,
+    questionsCount = QUIZ_QUESTIONS_COUNT.THREE,
     timeSettings: {
       totalTimeEnabled?: boolean;
       totalTimeLimit?: number;
@@ -20,7 +20,7 @@ export class QuizService {
     const {
       totalTimeEnabled = false,
       totalTimeLimit = 0,
-      questionTimeEnabled = false, 
+      questionTimeEnabled = false,
       questionTimeLimit = 0
     } = timeSettings;
 
@@ -38,22 +38,23 @@ export class QuizService {
       startedAt: new Date(),
       currentQuestionNumber: 1
     });
-    
+
     await newQuiz.save();
 
-    // ✅ FIXED: Pass correct number of arguments
     const firstQuestion = await AIService.generateQuestion(categoryTitle, subcategoryTitle, 3, QUESTION_TYPES.MULTIPLE_CHOICE);
 
     return {
-      quizId: newQuiz._id.toString(),
-      question: firstQuestion,
-      currentQuestionNumber: 1,
-      timeSettings: {
-        totalTimeEnabled,
-        totalTimeLimit,
-        questionTimeEnabled,
-        questionTimeLimit
-      }
+     
+        quizId: newQuiz._id.toString(),
+        question: firstQuestion,
+        currentQuestionNumber: 1,
+        timeSettings: {
+          totalTimeEnabled,
+          totalTimeLimit,
+          questionTimeEnabled,
+          questionTimeLimit
+        }
+
     };
   }
 
@@ -68,14 +69,13 @@ export class QuizService {
     questionId: string;
     questionText: string;
     options: string[];
-    questionType:  string;
+    questionType: string;
     difficultyLevel: number;
   }, userAnswer: string, progress: {
     current: number;
     total: number;
   }, timeSpent: number = 0) {
-    
-    // ✅ FIXED: Pass correct arguments to evaluateAnswer
+
     const aiResponse = await AIService.evaluateAnswer({
       questionData: {
         text: currentQuestion.questionText,
@@ -87,7 +87,7 @@ export class QuizService {
       category: quizData.categoryTitle,
       subcategory: quizData.subcategoryTitle
     });
-    const validts=isNaN(timeSpent) ? 0 : timeSpent;
+    const validts = isNaN(timeSpent) ? 0 : timeSpent;
 
     // Save quiz record
     const quizRecord = new QuizRecord({
@@ -106,7 +106,7 @@ export class QuizService {
       explanation: aiResponse.explanation,
       difficultyLevel: currentQuestion.difficultyLevel,
       questionType: currentQuestion.questionType,
-      timeSpent:validts,
+      timeSpent: validts,
       sequenceNumber: progress.current
     });
     await quizRecord.save();
@@ -114,7 +114,7 @@ export class QuizService {
     // Update quiz progress
     const updateData: any = {
       currentQuestionNumber: progress.current + 1,
-      totalTimeSpent: quizData.totalTimeSpent || 0+ timeSpent,
+      totalTimeSpent: quizData.totalTimeSpent || 0 + timeSpent,
       lastActivityAt: new Date()
     };
 
@@ -156,8 +156,7 @@ export class QuizService {
     }
 
     let nextType = Math.random() > 0.7 ? QUESTION_TYPES.DESCRIPTIVE : QUESTION_TYPES.MULTIPLE_CHOICE;
-    
-    // ✅ FIXED: Pass correct number of arguments
+
     const nextQuestion = await AIService.generateQuestion(
       quizData.categoryTitle,
       quizData.subcategoryTitle,
@@ -200,5 +199,47 @@ export class QuizService {
     const evaluation = await AIService.generateQuizEvaluation(totalScore, maxPossibleScore, quizRecords);
 
     return { totalScore, evaluation };
+  }
+
+   static async getQuizPreview(quizId: string, userId: string) {
+    try {
+      const quiz = await Quiz.findOne({
+        _id: quizId,
+        userId: userId
+      });
+
+      if (!quiz) {
+        throw new Error("Quiz not found or access denied");
+      }
+
+      const quizRecords = await QuizRecord.find({ quizId })
+        .sort({ sequenceNumber: 1 })
+        .select('-__v -createdAt -updatedAt');
+
+      const totalScore = quizRecords.reduce((sum, record) => sum + record.score, 0);
+      const totalQuestions = quizRecords.length;
+
+      let evaluation = "";
+      // if (quiz.status === QUIZ_STATUS.COMPLETED && quiz.finalFeedback) {
+      //   evaluation = quiz.finalFeedback;
+      // }
+
+      return {
+        quizId: quiz._id.toString(),
+        records: quizRecords,
+        totalScore,
+        totalQuestions,
+        categoryTitle: quiz.categoryTitle,
+        subcategoryTitle: quiz.subcategoryTitle,
+        completedAt: quiz.completedAt ,
+        evaluation,
+        status: quiz.status,
+        startedAt: quiz.startedAt,
+        questionsCount: quiz.questionsCount
+      };
+    } catch (error) {
+      console.error('Error in getQuizPreview:', error);
+      throw error;
+    }
   }
 }

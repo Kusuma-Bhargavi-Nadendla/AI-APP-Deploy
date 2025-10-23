@@ -10,13 +10,20 @@ import { jwtDecode } from "jwt-decode";
 //   categoryTitle: string;
 //   subcategoryTitle: string;
 // }
- interface QuizLandingData {
+
+interface QuizLandingData {
   categoryTitle: string;
   subcategoryTitle: string;
   description: string;
-  questionsCount?: number;
-  timeLimit?: number;
-  categoryId?:string;
+  questionsCount: number;
+  timeLimit: TimeSettings;
+}
+
+interface TimeSettings {
+  totalEnabled: boolean;
+  totalMinutes?: number;
+  perQuestionEnabled: boolean;
+  perQuestionSeconds?: number;
 }
 interface AIQuestion {
   questionText: string;
@@ -67,7 +74,6 @@ export default function QuizPage({
  
   const webcamRef = useRef<Webcam>(null);
  
-  // Handle speech
   useEffect(() => {
     if (!results?.length) return;
     let transcript = "";
@@ -81,7 +87,6 @@ export default function QuizPage({
     setUserAnswer(transcript);
   }, [results]);
  
-  // Start quiz ONCE
   useEffect(() => {
     if (hasStartedQuiz.current) return;
  
@@ -144,7 +149,6 @@ export default function QuizPage({
     startQuiz();
   }, [quizId, router]);
  
-  //  Submit answer and get next question
   const handleNext = async () => {
     if (!userAnswer.trim() || !currentQuestion || !quizSession) {
       alert("Please provide an answer.");
@@ -254,7 +258,7 @@ export default function QuizPage({
           </div>
  
           {/* Options */}
-          {currentQuestion?.options?.length &&
+          {currentQuestion?.options &&
             currentQuestion?.options?.length > 0 &&
             !isLoading && (
               <div className="mb-8 space-y-4 flex-1">

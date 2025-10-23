@@ -1,7 +1,7 @@
 import { AIService } from "./aiService"
-
 export class CategoryService {
   private categoryCache = new Map<string, string>(); 
+
 
   async getCategories(existingCategories: string[] = []) {
     console.log("get categories service invoked");

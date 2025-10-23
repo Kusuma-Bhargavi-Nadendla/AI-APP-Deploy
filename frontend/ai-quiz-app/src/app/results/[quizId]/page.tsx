@@ -91,7 +91,7 @@ export default function ResultsPage({
           <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400 mb-2">
             Quiz Completed!
           </h1>
-          <p className="text-gray-400">Here’s how you performed</p>
+          <p className="text-gray-400">Here's how you performed</p>
         </div>
 
         {/* Result Card */}

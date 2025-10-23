@@ -32,7 +32,7 @@ export function MagicSearchLoader() {
           ease: "easeInOut"
         }}
       >
-        ⚡ Fetching best results for you... 
+        ⚡ Fetching best results for only you... 
       </motion.p>
     </div>
   );

@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import CategoryCardComponent from "../../_components/CategoryCardComponent";
 import { MagicSearchLoader } from "@/app/_lib/MagicSearchLoader";
 import { getRandomColor } from "../../_lib/utils";
+import { setCachedResults, cleanupExpiredCache, getCachedSearchCategories } from "../../../lib/searchCache"
+import { cleanupExpiredSubcategoryCache } from "../../../lib/subCategoryCache"
+import { appDB } from "../../../lib/appDataDB";
 interface CategoryCardProps {
   categoryTitle: string;
   description?: string;
@@ -68,7 +71,11 @@ export default function Home() {
       description: item.description,
       trending: item.trending || false,
       color: getRandomColor() || "bg-white",
-      onArrowClick: () => console.log(`Clicked ${item.name}`),
+      onArrowClick: () => handleCardClick({
+        id: item.id,
+        title: item.name,
+        description: item.description
+      })
     }));
     if (page === 1) {
       setCategories(mappedCategories);
@@ -82,7 +89,7 @@ export default function Home() {
     if (isLoadingMore) return;
     setIsLoadingMore(true);
     try {
-      await loadCategories(true, page);
+      await loadCategories(false, page);
     } catch (error) {
       console.log("Failed to load more categories:", error);
     } finally {
@@ -93,14 +100,37 @@ export default function Home() {
   const handleSearch = async (query: string) => {
     const token = localStorage.getItem("token");
     if (query.length >= 1) {
-
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
+
+      const cachedCategories = await getCachedSearchCategories(query);
+      if (cachedCategories && cachedCategories.length > 0) {
+        console.log("Cache hit (categories only) for:", query);
+
+        const mappedFromCache = cachedCategories.map(item => ({
+          categoryId: item.categoryId,
+          categoryTitle: item.title,
+          description: item.description,
+          trending: item.isTrending,
+          color: getRandomColor(),
+          onArrowClick: () => handleCardClick({
+            id: item.categoryId ?? "",
+            title: item.title,
+            description: item.description ?? ""
+          })
+        }));
+
+        setCategories(mappedFromCache);
+        setIsSearching(false);
+        return;
+      }
+
       setIsSearching(true);
+      const currentQuery = query;
       searchTimeoutRef.current = setTimeout(async () => {
+        if (searchQuery.length === 0) return;
         try {
-          setIsSearching(true);
           const res = await fetch("http://localhost:5000/categories/Search", {
             method: "POST",
             headers: {
@@ -109,7 +139,6 @@ export default function Home() {
             },
             body: JSON.stringify({ search: query }),
           });
-
           if (res.ok) {
             const result = await res.json();
             // const searchData = await result.response;
@@ -121,10 +150,28 @@ export default function Home() {
               description: item.description,
               trending: item.trending || false,
               color: getRandomColor() || "bg-white",
-              onArrowClick: () => console.log(`Clicked ${item.name}`),
+              onArrowClick: () => handleCardClick(item),
             }));
+            console.log(searchQuery, currentQuery);
+            // if(searchQuery === currentQuery){
             setCategories(mappedSearchResults);
+            // }else if(searchQuery.length === 0){
+            //   loadCategories();
+            // }else{
+            //   // keep waiting
+            // }
+            const cacheResults = mappedSearchResults.map((item: any) => ({
+              categoryId: item.categoryId,
+              type: 'category',
+              title: item.categoryTitle,
+              description: item.description,
+              isTrending: item.trending,
+            }));
+            await setCachedResults(query, cacheResults);
+
+            console.log("setting cache for ", query);
           }
+
         } catch (error) {
           console.log("Search failed:", error);
         } finally {
@@ -138,7 +185,6 @@ export default function Home() {
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -152,6 +198,11 @@ export default function Home() {
     };
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    cleanupExpiredCache();
+    cleanupExpiredSubcategoryCache();
   }, []);
 
   useEffect(() => {
@@ -186,6 +237,55 @@ export default function Home() {
     await loadCategories(true);
     setIsLoading(false);
   };
+  const handleRefreshAll = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+
+      const clearRes = await fetch("http://localhost:5000/categories/clearCache", {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!clearRes.ok) {
+        throw new Error('Failed to clear cache');
+      }
+
+      await loadCategories(true, 1);
+
+    } catch (error) {
+      console.log("Failed to refresh all:", error);
+      await loadCategories(true, 1);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleCardClick = async ({ id, title, description }: { id: string, title: string, description: string }) => {
+    console.log('Button clicked - category:', title);
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    const userId = await appDB.getUserId();
+    console.log(userId, "got from indexdb");
+    if (userId) {
+      const session = await appDB.createSession(userId!, {
+        category: title,
+        description: description ?? ""
+      });
+      console.log(session.sessionId);
+      localStorage.setItem('sessionId', session.sessionId);
+    } else {
+      console.warn("User ID not found, unable to create session")
+    }
+
+    localStorage.setItem('categoryId', JSON.stringify(id));
+    router.push(`/categories/${slug}`);
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -215,17 +315,29 @@ export default function Home() {
         </div>
       </header>
 
-      {cacheInfo.cached && (!isSearching && searchQuery.length == 0) && (
+      {cacheInfo.cached && !isSearching && searchQuery.length === 0 && cacheInfo.age !== 'just now' && (
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800">
-          <div className="flex items-center justify-center gap-2">
-            <span>These categories were generated {cacheInfo.age}</span>
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="underline hover:no-underline disabled:opacity-50"
-            >
-              {isLoading ? 'Refreshing...' : 'Get fresh results'}
-            </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-center flex-1">
+              <span>These categories were generated {cacheInfo.age}</span>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="ml-2 underline hover:no-underline disabled:opacity-50 text-blue-800"
+              >
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+
+            {page >= 2 && (
+              <button
+                onClick={handleRefreshAll}
+                disabled={isLoading}
+                className="text-red-600 underline hover:no-underline disabled:opacity-50"
+              >
+                Refresh All Pages
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -22,6 +22,7 @@ interface AnalyticsData {
         category: string
         subcategory: string
         score: number
+        status: 'completed' | 'in-progress'
     }>
 }
 
@@ -143,6 +144,13 @@ export default function AnalyticsPage() {
             </>
         )
     }
+    const handleContinue=(quizId:string)=>{
+        console.log("continue quiz with id:",quizId);
+    }
+    const handlePreview=(quizId:string)=>{
+        console.log("preview quiz with id:",quizId);
+    }
+    
 
     if (loading) {
         return (
@@ -249,10 +257,11 @@ export default function AnalyticsPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-gray-200">
-                                        <th className="text-left py-3 text-gray-600 font-medium">Date</th>
+                                        <th className="text-left py-3 text-gray-600 font-medium">Datess</th>
                                         <th className="text-left py-3 text-gray-600 font-medium">Category</th>
                                         <th className="text-left py-3 text-gray-600 font-medium">Subcategory</th>
                                         <th className="text-left py-3 text-gray-600 font-medium">Score</th>
+                                        <th className="text-left py-3 text-gray-600 font-medium">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -270,6 +279,23 @@ export default function AnalyticsPage() {
                                                     }`}>
                                                     {quiz.score}%
                                                 </span>
+                                            </td>
+                                            <td className="py-3">
+                                                {quiz.status === 'completed' ? (
+                                                    <button
+                                                        onClick={() => handlePreview(quiz.id)}
+                                                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                                                    >
+                                                        Preview
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleContinue(quiz.id)}
+                                                        className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                                                    >
+                                                        Continue
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -299,7 +325,7 @@ export default function AnalyticsPage() {
                                         className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
                                         onMouseOver={() => setExpandedCategory(category.category)}
                                         onMouseOut={() => setExpandedCategory(null)}
-                                        
+
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-medium text-gray-900">{toTitleCase(category.category)}</span>

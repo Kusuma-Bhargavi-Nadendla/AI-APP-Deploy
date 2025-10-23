@@ -191,33 +191,38 @@ IMPORTANT:
     return await this.generateContent(prompt);
   }
 
-  static async generateSubcategories(category: string, existingSubcategories: string[] = []) {
+static async generateSubcategories(category: string, existingSubcategories: string[] = []) {
     const prompt = `
     Generate exactly 10 diverse and relevant subcategories for the main quiz category: "${category}".
-   
+    
     Each subcategory should be a specific, well-defined topic within "${category}"
     (e.g., if parent is "Information Technology", valid subcategories include "React.js", "Node.js", "Cybersecurity", "Cloud Architecture").
-   
+
+    CRITICAL DISTRIBUTION RULES:
+    - "trending": Set to TRUE for only 2-3 subcategories that are currently most popular/high-demand in 2024
+    - "new": Set to TRUE for only 1-2 subcategories that are recently emerging topics
+    - A subcategory can be BOTH trending AND new, but this should be rare (max 1 item)
+    - Ensure variety: not all items should be trending or new
+
     Each object must have:
       - "name": short, clear title (e.g., "Machine Learning")
       - "description": 1-sentence engaging explanation of what the subcategory covers
-      - "trending": boolean (true if currently popular or high-demand)
-      - "new" : boolean (true if the topic is recently introduced)
-      - "usersTaken" : number<100 (give a random value for this)
-      - "color": a Tailwind-compatible background color class like "bg-blue-50", "bg-green-50", etc. (use varied soft colors)
-   
+      - "trending": boolean (follow the distribution rules above)
+      - "new": boolean (follow the distribution rules above) 
+      - "usersTaken": number between 1-100 (distribute realistically: trending items should have higher numbers 60-100, new items 10-40, regular items 20-80)
+
     Return them as a JSON array of objects in this exact format:
-    [{"name":"...","description":"...","trending":true,"new":true,"usersTaken":50,"color":"..."}, ...]
-   
+    [{"name":"...","description":"...","trending":true,"new":false,"usersTaken":50}, ...]
+
     Do NOT include any of the following subcategory names (avoid duplicates):
     ${existingSubcategories.length ? existingSubcategories.join(", ") : "none"}
-   
+
     Do NOT wrap the response in markdown code blocks (no \`\`\`json).
     Do NOT add any introduction, explanation, prefix, or suffix.
     Return ONLY valid JSON.
     `;
     return await this.generateContent(prompt);
-  }
+}
 
   static async generateSubcategoriesBySearch(categoryTitle: string, search: string, existingSubcategories: string[] = []) {
     const prompt = `

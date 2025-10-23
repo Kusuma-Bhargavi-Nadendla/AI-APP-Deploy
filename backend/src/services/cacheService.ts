@@ -1,3 +1,5 @@
+import { STATIC_CATEGORIES } from "../config/constants";
+
 interface CachedData {
   data: any[];
   timestamp: number;
@@ -7,6 +9,11 @@ interface CachedData {
 export class CacheService {
   private cache = new Map<string, CachedData>();
   private readonly CACHE_DURATION = 120 * 60 * 1000;
+  private CACHE_KEY = 'categories';
+
+  constructor() {
+    this.setPage(this.CACHE_KEY, STATIC_CATEGORIES, 1)
+  }
 
   setPage(key: string, data: any[], page: number) {
     this.cache.set(`${key}_page_${page}`, {
@@ -62,6 +69,11 @@ export class CacheService {
     };
 
   }
+  clearAll(): void {
+    this.cache.clear();
+    // this.setPage(this.CACHE_KEY, STATIC_CATEGORIES, 1);
+  }
+
 }
 
 export const globalCache = new CacheService();

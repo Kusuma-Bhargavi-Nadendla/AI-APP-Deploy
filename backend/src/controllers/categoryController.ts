@@ -4,6 +4,7 @@ import { AIService } from "../services/aiService"
 import { globalCache } from "../services/cacheService";
 const categoryService = new CategoryService();
 const CACHE_KEY = 'categories';
+
 export const categoryController = {
 
     // async getCategories(req: Request, res: Response) {
@@ -35,10 +36,10 @@ export const categoryController = {
 
             if (!refresh) {
                 // const cached = globalCache.get(CACHE_KEY,page);
-                const cached = globalCache.getPage(CACHE_KEY,page);
+                const cached = globalCache.getPage(CACHE_KEY, page);
                 if (cached) {
                     // const cacheInfo = globalCache.getCacheInfo(CACHE_KEY);
-                    const cacheInfo = globalCache.getPageCacheInfo(CACHE_KEY,page);
+                    const cacheInfo = globalCache.getPageCacheInfo(CACHE_KEY, page);
                     return res.json({
                         success: true,
                         data: cached.data,
@@ -54,6 +55,7 @@ export const categoryController = {
 
             // globalCache.set(CACHE_KEY, categories, page);
             globalCache.setPage(CACHE_KEY, categories, page);
+            console.log("setting cache for page:", page, categories);
 
             res.json({
                 success: true,
@@ -71,6 +73,7 @@ export const categoryController = {
             });
         }
     },
+
     async searchCategories(req: Request, res: Response) {
         try {
             const { search, categoriesTitles = [] } = req.body;
@@ -94,6 +97,22 @@ export const categoryController = {
             res.status(500).json({
                 success: false,
                 error: 'Failed to search categories'
+            });
+        }
+    },
+    async clearAllCache(req: Request, res: Response) {
+        try {
+            globalCache.clearAll();
+
+            res.json({
+                success: true,
+                message: 'All cache cleared successfully'
+            });
+        } catch (error) {
+            console.error('Clear cache error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to clear cache'
             });
         }
     },

@@ -107,5 +107,42 @@ export const quizController = {
         error: 'Failed to resume quiz: ' + error.message
       });
     }
+  },
+
+  async getQuizPreview(req: Request, res: Response) {
+    try {
+      const userId = req.body.userId;
+      const quizId=req.body.quizId;
+
+      if (!quizId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Quiz ID is required'
+        });
+      }
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'User ID is required'
+        });
+      }
+
+      const previewData = await QuizService.getQuizPreview(quizId, userId);
+
+      res.json({
+        success: true,
+        message: 'Quiz preview loaded successfully',
+        data: previewData
+      });
+    } catch (error: any) {
+      console.error('Get quiz preview error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load quiz preview: ' + error.message
+      });
+    }
   }
+
+
 };
