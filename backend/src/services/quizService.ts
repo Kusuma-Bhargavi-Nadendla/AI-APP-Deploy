@@ -242,4 +242,40 @@ export class QuizService {
       throw error;
     }
   }
+  static async resumeQuiz(userId:string,quizId:string){
+    const existingQuiz = await Quiz.findOne({
+      _id: quizId,
+      userId: userId,
+      status: { $ne: 'completed' }
+    });
+
+    if (!existingQuiz) {
+      return ({
+        success: false,
+        error: "No active quiz session found"
+      });
+    }
+    const currentRecord = await QuizRecord.findOne({
+      quizId: quizId,
+      userId: userId
+    }).sort({ sequenceNumber: -1 });
+
+    const nextQuestionNumber = currentRecord ? existingQuiz.currentQuestionNumber + 1 : 1;
+    
+    const nextQuestion = await AIService.generateQuestion(
+      existingQuiz.categoryTitle ,
+      existingQuiz.subcategoryTitle,
+      currentRecord?.difficultyLevel || 1,
+    );
+    
+    return ({
+      success: true,
+      data: {
+        quizId: existingQuiz._id.toString(),
+        question: nextQuestion,
+        currentQuestionNumber: nextQuestionNumber,
+        totalQuestions: existingQuiz.questionsCount
+      }
+    });
+  }
 }

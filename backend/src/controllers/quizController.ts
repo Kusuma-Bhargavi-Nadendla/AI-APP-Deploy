@@ -86,7 +86,7 @@ export const quizController = {
 
   async resumeQuiz(req: Request, res: Response) {
     try {
-      const { quizId } = req.body;
+      const { userId,quizId } = req.body;
 
       if (!quizId) {
         return res.status(400).json({
@@ -94,8 +94,20 @@ export const quizController = {
           error: 'quizId is required'
         });
       }
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'userId is required'
+        });
+      }
+      const result = await QuizService.resumeQuiz(userId,quizId);
+      res.json({
+        success: true,
+        message: 'Quiz started successfully',
+        data: result
+      });
 
-      // You'll need to implement resumeQuiz in QuizService
+
       res.status(501).json({
         success: false,
         error: 'Resume quiz feature not implemented yet'

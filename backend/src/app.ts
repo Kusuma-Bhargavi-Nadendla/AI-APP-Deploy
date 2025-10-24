@@ -37,12 +37,7 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔐 Auth routes: http://localhost:${PORT}/api/auth`);
-  console.log(`📚 Category routes: http://localhost:${PORT}/api/categories`);
-  console.log(`🎯 Quiz routes: http://localhost:${PORT}/api/quiz`);
-  console.log(`📈 Analytics routes: http://localhost:${PORT}/api/analytics`);
+  console.log(` Server running on http://localhost:${PORT}`);
 });
 
 export default app;

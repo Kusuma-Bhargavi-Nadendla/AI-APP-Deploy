@@ -24,8 +24,8 @@ interface SessionData {
     category: string;
     categoryDescription: string;
     subcategory: string;
-    subcategoryDescription:string;
-    quizSlugId:string;
+    subcategoryDescription: string;
+    quizSlugId: string;
     questionsCount: number;
     timeSettings: TimeSettings;
     quizId: string;
@@ -76,7 +76,7 @@ class AppDB {
         };
         await db.put('userData', user);
 
-        this.currentUserId=userData.userId;
+        this.currentUserId = userData.userId;
         return user;
     }
 
@@ -112,8 +112,8 @@ class AppDB {
             category: categoryData.category,
             categoryDescription: categoryData.description,
             subcategory: '',
-            subcategoryDescription:'',
-            quizSlugId:'',
+            subcategoryDescription: '',
+            quizSlugId: '',
             questionsCount: 0,
             timeSettings: {
                 totalEnabled: false,
@@ -133,14 +133,14 @@ class AppDB {
         return session;
     }
 
-    async getCurrentCategoryDetails(sessionId:string){
+    async getCurrentCategoryDetails(sessionId: string) {
         const db = await this.ensureDB();
         const session = await db.get('sessionData', sessionId);
         return {
-            category:session.category,
-            categoryDescription:session.categoryDescription,
-            subcategory:session.subcategory,
-            subcategoryDescription:session.subcategoryDescription
+            category: session.category,
+            categoryDescription: session.categoryDescription,
+            subcategory: session.subcategory,
+            subcategoryDescription: session.subcategoryDescription
         }
     }
 
@@ -157,6 +157,16 @@ class AppDB {
             return updatedSession;
         }
         return null;
+    }
+    async getQuizPreviewData(sessionId: string) {
+        const session = await this.getSession(sessionId);
+        if (session) {
+            return {
+                quizId: session.quizId,
+                userId:session.userId
+            }
+        }
+
     }
 
     async getCurrentSession(userId: string): Promise<SessionData | null> {

@@ -36,7 +36,7 @@ export default function SubcategoryCard({
   };
 
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-500 cursor-pointer overflow-hidden">
+    <Card className="border-0 shadow-sm  cursor-pointer overflow-hidden">
       <CardContent className="p-0">
         <div className="flex items-stretch">
           <div 

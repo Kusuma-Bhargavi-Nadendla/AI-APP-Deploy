@@ -1,4 +1,3 @@
-// src/routes/quiz.ts
 import express from 'express';
 import { quizController } from "../controllers/quizController";
 import { authMiddleware } from "../midlleware/auth"

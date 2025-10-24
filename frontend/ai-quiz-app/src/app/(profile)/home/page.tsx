@@ -335,7 +335,7 @@ export default function Home() {
                 disabled={isLoading}
                 className="text-red-600 underline hover:no-underline disabled:opacity-50"
               >
-                Refresh All Pages
+                Refresh All
               </button>
             )}
           </div>

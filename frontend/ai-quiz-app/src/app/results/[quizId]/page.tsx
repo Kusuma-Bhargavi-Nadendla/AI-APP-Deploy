@@ -2,6 +2,8 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import confetti from "canvas-confetti";
+import { Share2, Home, RotateCcw, Award, Clock, Target, BarChart3, Sparkles } from "lucide-react";
 
 interface QuizResult {
   quizId: string;
@@ -20,194 +22,236 @@ export default function ResultsPage({
   const router = useRouter();
   const [result, setResult] = useState<QuizResult>();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const [animatedPercent, setAnimatedPercent] = useState(0);
+
   useEffect(() => {
     const data = localStorage.getItem(quizId);
     if (data) {
-      setResult(JSON.parse(data));
+      const resultData = JSON.parse(data);
+      setResult(resultData);
+      
+      const totalScore = resultData.totalQuestions * 10;
+      const targetPercent = Math.round((resultData.finalScore / totalScore) * 100);
+      
+      let currentScore = 0;
+      let currentPercent = 0;
+      const duration = 1500;
+      const steps = 60;
+      const incrementScore = resultData.finalScore / steps;
+      const incrementPercent = targetPercent / steps;
+      
+      const timer = setInterval(() => {
+        currentScore += incrementScore;
+        currentPercent += incrementPercent;
+        
+        if (currentScore >= resultData.finalScore) {
+          currentScore = resultData.finalScore;
+          currentPercent = targetPercent;
+          clearInterval(timer);
+        }
+        
+        setAnimatedScore(Math.floor(currentScore));
+        setAnimatedPercent(Math.floor(currentPercent));
+      }, duration / steps);
+      
       setLoading(false);
     }
-  }, []);
+  }, [quizId]);
+
+  useEffect(() => {
+    if (!result) return;
+
+    const duration = 2000;
+    const animationEnd = Date.now() + duration;
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const frame = () => {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) return;
+
+      const particleCount = 35 * (timeLeft / duration);
+      
+      confetti({
+        particleCount,
+        startVelocity: 25,
+        spread: 300,
+        ticks: 150,
+        origin: { 
+          x: randomInRange(0.1, 0.9), 
+          y: Math.random() - 0.2 
+        },
+        colors: ['#a78bfa', '#f472b6', '#60a5fa', '#34d399']
+      });
+
+      requestAnimationFrame(frame);
+    };
+
+    frame();
+
+    setTimeout(() => confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }), 300);
+    setTimeout(() => confetti({ particleCount: 35, spread: 80, origin: { x: 0.2, y: 0.6 } }), 800);
+  }, [result]);
 
   const goToHome = () => router.push("/home");
   const goToHistory = () => router.push("/history");
-
-  // Score percentage
-  const scorePercent = result
-    ? Math.round((result.finalScore / (result.totalQuestions * 10)) * 100)
-    : 0;
+  const retryQuiz = () => router.push(`/quiz/${quizId}/start`);
 
   const TotalScore = result ? result.totalQuestions * 10 : 0;
 
+  const getPerformanceData = () => {
+    const percent = Math.round((result?.finalScore || 0) / TotalScore * 100);
+    if (percent >= 90) {
+      return { 
+        emoji: "🎯", 
+        message: "Outstanding!", 
+        color: "from-emerald-400 to-teal-400",
+        bgColor: "bg-emerald-50",
+        textColor: "text-emerald-700"
+      };
+    } else if (percent >= 70) {
+      return { 
+        emoji: "🌟", 
+        message: "Excellent work!", 
+        color: "from-blue-400 to-cyan-400",
+        bgColor: "bg-blue-50",
+        textColor: "text-blue-700"
+      };
+    } else if (percent >= 50) {
+      return { 
+        emoji: "👍", 
+        message: "Good job!", 
+        color: "from-amber-400 to-yellow-400",
+        bgColor: "bg-amber-50",
+        textColor: "text-amber-700"
+      };
+    } else {
+      return { 
+        emoji: "💪", 
+        message: "Keep practicing!", 
+        color: "from-rose-400 to-pink-400",
+        bgColor: "bg-rose-50",
+        textColor: "text-rose-700"
+      };
+    }
+  };
+
+  const performance = getPerformanceData();
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-          <p className="mt-4 text-gray-400">Loading your results...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4">
-        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-red-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">Oops!</h2>
-          <p className="text-gray-300 mb-6">{error}</p>
-          <button
-            onClick={goToHome}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition"
-          >
-            Go to Home
-          </button>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-indigo-500 border-t-transparent"></div>
+          <p className="mt-3 text-slate-600 text-sm">Loading your results...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4 sm:p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400 mb-2">
-            Quiz Completed!
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-slate-800 p-4">
+      <div className="fixed inset-0 pointer-events-none z-40" id="confetti-container" />
+      
+      <div className="max-w-md mx-auto">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-4 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full px-4 py-2 mb-3 shadow-sm">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-medium text-slate-700">Quiz Completed</span>
+          </div>
+          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 mb-1">
+            Amazing Work!
           </h1>
-          <p className="text-gray-400">Here's how you performed</p>
+          <p className="text-slate-600 text-sm">Here's how you performed</p>
         </div>
 
-        {/* Result Card */}
-        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 md:p-8 shadow-xl">
-          {/* Category */}
-          <div className="text-center mb-6">
-            <span className="inline-block px-3 py-1 bg-indigo-900/50 text-indigo-300 text-sm font-medium rounded-full">
+        <div className="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl p-6 shadow-sm mb-5">
+          <div className={`${performance.bgColor} rounded-xl p-3 text-center mb-5 border ${performance.textColor} border-opacity-20`}>
+            <div className="text-3xl mb-1">{performance.emoji}</div>
+            <p className="text-sm font-medium">{performance.message}</p>
+          </div>
+
+          <div className="text-center mb-5">
+            <span className="inline-block px-3 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full border border-slate-200">
               {result?.subcategoryTitle}
             </span>
           </div>
 
-          {/* Score Circle */}
-          <div className="flex justify-center mb-8">
-            <div className="relative w-48 h-48">
-              {/* Background circle */}
-              <svg className="w-full h-full" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="#374151"
-                  strokeWidth="8"
-                />
-                {/* Progress circle */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke={
-                    scorePercent >= 70
-                      ? "#10B981"
-                      : scorePercent >= 50
-                      ? "#F59E0B"
-                      : "#EF4444"
-                  }
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 45}`}
-                  strokeDashoffset={`${
-                    2 * Math.PI * 45 * (1 - scorePercent / 100)
-                  }`}
-                  transform="rotate(-90 50 50)"
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold">Score</span>
-                <span className="text-gray-400 text-sm mt-1">
-                  {result?.finalScore}
-                </span>
-              </div>
+          <div className="flex items-center justify-between mb-5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="text-center flex-1">
+              <div className="text-xl font-bold text-slate-800">{animatedScore}</div>
+              <div className="text-xs text-slate-500 mt-1">Your Score</div>
+            </div>
+            <div className="h-6 w-px bg-slate-300"></div>
+            <div className="text-center flex-1">
+              <div className="text-xl font-bold text-slate-800">{TotalScore}</div>
+              <div className="text-xs text-slate-500 mt-1">Total Points</div>
+            </div>
+            <div className="h-6 w-px bg-slate-300"></div>
+            <div className="text-center flex-1">
+              <div className="text-xl font-bold text-slate-800">{animatedPercent}%</div>
+              <div className="text-xs text-slate-500 mt-1">Percentage</div>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-gray-900/50 p-4 rounded-xl text-center">
-              <div className="text-2xl font-bold text-emerald-400">
-                {result?.totalQuestions}
-              </div>
-              <div className="text-gray-400 text-sm">Questions</div>
+          <div className="mb-5">
+            <div className="flex justify-between text-xs text-slate-600 mb-2">
+              <span>Performance</span>
+              <span>{animatedPercent}%</span>
             </div>
-            <div className="bg-gray-900/50 p-4 rounded-xl text-center">
-              <div className="text-2xl font-bold text-emerald-400">
-                {TotalScore}
-              </div>
-              <div className="text-gray-400 text-sm">Total</div>
+            <div className="w-full bg-slate-200 rounded-full h-1.5">
+              <div 
+                className={`h-1.5 rounded-full bg-gradient-to-r ${performance.color} transition-all duration-300`}
+                style={{ width: `${animatedPercent}%` }}
+              />
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="text-center p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <Target className="h-4 w-4 text-slate-600 mx-auto mb-1" />
+              <div className="text-sm font-semibold text-slate-800">{result?.totalQuestions}</div>
+              <div className="text-xs text-slate-500">Questions</div>
+            </div>
+            <div className="text-center p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <Award className="h-4 w-4 text-slate-600 mx-auto mb-1" />
+              <div className="text-sm font-semibold text-slate-800">{animatedPercent}%</div>
+              <div className="text-xs text-slate-500">Accuracy</div>
+            </div>
+            <div className="text-center p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <BarChart3 className="h-4 w-4 text-slate-600 mx-auto mb-1" />
+              <div className="text-sm font-semibold text-slate-800">
+                {animatedScore}/{TotalScore}
+              </div>
+              <div className="text-xs text-slate-500">Score</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={goToHistory}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl transition border border-gray-600"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition border border-slate-300 text-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              View History
+              <Clock className="h-4 w-4" />
+              History
             </button>
             <button
               onClick={goToHome}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl transition shadow-lg"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium rounded-xl transition shadow-sm text-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
-              Back to Home
+              <Home className="h-4 w-4" />
+              Home
             </button>
           </div>
         </div>
+
+        
       </div>
     </div>
   );
