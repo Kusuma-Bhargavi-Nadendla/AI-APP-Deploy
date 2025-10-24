@@ -294,14 +294,12 @@ export default function CategoryClient({ params }: PageProps) {
 
   }
 
-  // Load initial subcategories
   useEffect(() => {
     console.log("load 1", categoryTitle)
     loadInitialSubcategories();
     loadCategoryDetails();
   }, [categoryTitle]);
 
-  // Infinite scroll observer
   useEffect(() => {
     if (isLoading || isLoadingMore || searchQuery.length > 0) return;
 
@@ -396,7 +394,6 @@ export default function CategoryClient({ params }: PageProps) {
           </div>
 
           <div className="lg:w-3/4">
-            {/* Cache Info Banner */}
 
 
             <div className="flex justify-end mb-8">

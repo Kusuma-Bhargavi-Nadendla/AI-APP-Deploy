@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import CategoryCardComponent from "../../_components/CategoryCardComponent";
-import { MagicSearchLoader } from "@/app/_lib/MagicSearchLoader";
+import { MagicSearchLoader } from "../../_lib/MagicSearchLoader";
 import { getRandomColor } from "../../_lib/utils";
 import { setCachedResults, cleanupExpiredCache, getCachedSearchCategories } from "../../../lib/searchCache"
 import { cleanupExpiredSubcategoryCache } from "../../../lib/subCategoryCache"

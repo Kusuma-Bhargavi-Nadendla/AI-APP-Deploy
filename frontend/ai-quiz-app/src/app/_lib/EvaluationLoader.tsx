@@ -30,7 +30,9 @@ export function EvaluatingQuizLoader() {
           ease: "easeInOut"
         }}
       >
-        🧠 AI is evaluating, just a few seconds...
+        {/* 🧠  */}
+        AI is evaluating, 
+        just a few seconds...
       </motion.p>
     </div>
   );

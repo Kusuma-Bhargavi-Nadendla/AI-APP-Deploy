@@ -13,7 +13,6 @@ export const quizController = {
         timeSettings = {}
       } = req.body;
 
-      // Validate required fields
       if (!userId || !categoryId || !categoryTitle || !subcategoryTitle) {
         return res.status(400).json({
           success: false,
@@ -54,7 +53,6 @@ export const quizController = {
         timeSpent = 0 
       } = req.body;
 
-      // Validate required fields
       if (!quizData || !currentQuestion || !userAnswer || !progress) {
         return res.status(400).json({
           success: false,

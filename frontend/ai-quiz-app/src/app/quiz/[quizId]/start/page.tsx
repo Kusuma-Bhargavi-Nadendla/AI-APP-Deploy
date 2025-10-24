@@ -116,7 +116,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
           })
         );
         const faceCount = detections.length;
- 
+
         if (faceCount === 0) {
           setProctoringStatus("No face detected");
         } else if (faceCount > 1) {
@@ -204,7 +204,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cameras = devices.filter(device => device.kind === 'videoinput');
         const mics = devices.filter(device => device.kind === 'audioinput');
-        
+
         setCameraActive(cameras.length > 0);
         setMicActive(mics.length > 0);
 
@@ -237,12 +237,12 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
         audioIntervalRef.current = setInterval(() => {
           if (!analyserRef.current) return;
-          
+
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
-          
+
           const average = data.reduce((a, b) => a + b) / data.length;
-          
+
           if (average > 80) {
             handleViolation("High audio volume");
             showWarning("High background noise detected");
@@ -322,7 +322,10 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       console.log("Fullscreen not supported");
     }
   };
+  const exit = async () => {
+    // await document.exitFullscreen();
 
+  }
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -331,10 +334,44 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     enterFullscreen();
 
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      exit();
+      stopAllMedia();
     };
   }, []);
+
+  const stopAllMedia = () => {
+    if (webcamRef.current?.video?.srcObject) {
+      const stream = webcamRef.current.video.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+
+    if (isRecording) {
+      stopSpeechToText();
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    if (audioIntervalRef.current) {
+      clearInterval(audioIntervalRef.current);
+    }
+
+    if (proctoringIntervalRef.current) {
+      clearInterval(proctoringIntervalRef.current);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopAllMedia();
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(console.error);
+      }
+    };
+  }, [isRecording]);
 
   useEffect(() => {
     if (hasStartedQuiz.current) return;
@@ -566,9 +603,8 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
                       <User className="h-4 w-4 text-blue-500" />
                       <span className="text-xs text-gray-600">Face Detection</span>
                     </div>
-                    <div className={`text-xs font-medium ${
-                      proctoringStatus === "Verified" ? "text-green-600" : "text-red-600"
-                    }`}>
+                    <div className={`text-xs font-medium ${proctoringStatus === "Verified" ? "text-green-600" : "text-red-600"
+                      }`}>
                       {proctoringStatus}
                     </div>
                   </div>
@@ -620,16 +656,14 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
                     facingMode: "user",
                   }}
                 />
-                
+
                 <div className="absolute top-3 left-3">
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${
-                    proctoringStatus === "Verified" 
-                      ? "bg-green-500/20 text-green-700 border-green-300" 
-                      : "bg-red-500/20 text-red-700 border-red-300"
-                  }`}>
-                    <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${
-                      proctoringStatus === "Verified" ? "bg-green-500" : "bg-red-500"
-                    }`}></span>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${proctoringStatus === "Verified"
+                    ? "bg-green-500/20 text-green-700 border-green-300"
+                    : "bg-red-500/20 text-red-700 border-red-300"
+                    }`}>
+                    <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${proctoringStatus === "Verified" ? "bg-green-500" : "bg-red-500"
+                      }`}></span>
                     {proctoringStatus}
                   </div>
                 </div>
@@ -681,10 +715,11 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white/90 rounded-xl p-4 shadow-lg border border-gray-200">
-            <EvaluatingQuizLoader />
-          </div>
+          {/* <div className="backdrop-blur-s rounded-xl p-4 shadow-lg border border-gray-200"> */}
+          <EvaluatingQuizLoader />
+          {/* </div> */}
         </div>
+
       )}
     </div>
   );
