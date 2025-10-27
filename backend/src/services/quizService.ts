@@ -89,7 +89,6 @@ export class QuizService {
     });
     const validts = isNaN(timeSpent) ? 0 : timeSpent;
 
-    // Save quiz record
     const quizRecord = new QuizRecord({
       quizId: quizData.quizId,
       userId: quizData.userId,
@@ -111,7 +110,6 @@ export class QuizService {
     });
     await quizRecord.save();
 
-    // Update quiz progress
     const updateData: any = {
       currentQuestionNumber: progress.current + 1,
       totalTimeSpent: quizData.totalTimeSpent || 0 + timeSpent,
@@ -124,7 +122,6 @@ export class QuizService {
 
     await Quiz.findByIdAndUpdate(quizData.quizId, updateData);
 
-    // Check if quiz completed
     if (progress.current >= progress.total) {
       const { totalScore: finalScore, evaluation } = await this.calculateFinalScore(quizData.quizId);
 
@@ -188,6 +185,7 @@ export class QuizService {
 
   static async calculateFinalScore(quizId: string): Promise<{ totalScore: number; evaluation: string }> {
     const quizRecords = await QuizRecord.find({ quizId });
+    console.log("quiz records retrived:0",quizRecords);
 
     if (quizRecords.length === 0) {
       return { totalScore: 0, evaluation: "No questions were answered." };
@@ -260,7 +258,7 @@ export class QuizService {
       userId: userId
     }).sort({ sequenceNumber: -1 });
 
-    const nextQuestionNumber = currentRecord ? existingQuiz.currentQuestionNumber + 1 : 1;
+    const nextQuestionNumber = currentRecord ? existingQuiz.currentQuestionNumber  : 1;
     
     const nextQuestion = await AIService.generateQuestion(
       existingQuiz.categoryTitle ,
@@ -269,13 +267,45 @@ export class QuizService {
     );
     
     return ({
-      success: true,
-      data: {
         quizId: existingQuiz._id.toString(),
         question: nextQuestion,
-        currentQuestionNumber: nextQuestionNumber,
-        totalQuestions: existingQuiz.questionsCount
-      }
+        currentQuestionNumber: nextQuestionNumber,      
     });
   }
+  static async getQuizById(quizId:string) {
+    const quiz = await Quiz.findById(quizId);
+    
+    if (!quiz) {
+      return { success: false, error: 'Quiz not found' };
+    }
+
+    const sessionData = {
+      category: quiz.categoryTitle,
+      categoryDescription: quiz.categoryTitle,
+      subcategory: quiz.subcategoryTitle,
+      subcategoryDescription: quiz.subcategoryTitle,
+      quizSlugId: quiz._id.toString(),
+      questionsCount: quiz.questionsCount,
+      timeSettings: {
+        totalEnabled: quiz.totalTimeEnabled,
+        perQuestionEnabled: quiz.questionTimeEnabled,
+        totalMinutes: quiz.totalTimeEnabled ? quiz.totalTimeLimit : undefined,
+        perQuestionSeconds: quiz.questionTimeEnabled ? quiz.questionTimeLimit : undefined
+      },
+      quizId: quiz._id.toString(),
+      status: quiz.status,
+      currentQuestionIndex: quiz.currentQuestionNumber ,
+      startTime: quiz.startedAt
+    };
+
+    return { 
+      success: true, 
+      data: sessionData 
+    };
+  }
 }
+
+
+  
+
+

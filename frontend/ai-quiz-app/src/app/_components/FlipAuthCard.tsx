@@ -7,6 +7,31 @@ import { validateToken } from '../_lib/validateAuth';
 import { appDB } from "../../lib/appDataDB";
 import { jwtDecode } from 'jwt-decode';
 
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().email("Please provide a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const registerSchema = z.object({
+  name: z.string().min(3, "Name must be atleast 3 letters").max(50," Name must be less than 50 letters"),
+  email: z.string().email("Please provide a valid email address"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[a-z])/, "Must contain at least one lowercase letter")
+    .regex(/^(?=.*[A-Z])/, "Must contain at least one uppercase letter")  
+    .regex(/^(?=.*\d)/, "Must contain at least one number")  
+    .regex(/^(?=.*[@$!%*?&])/, "Must contain at least one special character (@$!%*?&)"),  
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
+
 export default function FlipAuthCard() {
 
   const router = useRouter();
@@ -15,12 +40,12 @@ export default function FlipAuthCard() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const [loginFormData, setLoginFormData] = useState({
+  const [loginFormData, setLoginFormData] = useState<LoginFormData>({
     email: "",
     password: "",
   });
 
-  const [registerFormData, setRegisterFormData] = useState({
+  const [registerFormData, setRegisterFormData] = useState<RegisterFormData>({
     name: "",
     email: "",
     password: "",
@@ -45,11 +70,11 @@ export default function FlipAuthCard() {
     checkToken();
   }, [router]);
 
-  const setUserDetailsDB = async ({id,name,email}:{id:string,name:string,email:string}) => {
+  const setUserDetailsDB = async ({ id, name, email }: { id: string, name: string, email: string }) => {
     await appDB.setUserLogin({
       userId: id,
       name: name,
-      email:email
+      email: email
     });
   }
 
@@ -59,12 +84,13 @@ export default function FlipAuthCard() {
     setError("");
 
     try {
+      const validatedData = loginSchema.parse(loginFormData);
       const response = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(loginFormData),
+        body: JSON.stringify(validatedData),
       });
 
       const data = await response.json();
@@ -79,11 +105,19 @@ export default function FlipAuthCard() {
         }
       }
       localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', data.user.id);
       setUserDetailsDB(data.user);
 
       router.replace("/home");
     } catch (err: any) {
-      setError(err.message || 'Something went wrong during login. Please try again.');
+      if (err instanceof z.ZodError) {
+        const message = err.issues.map(i => i.message);
+        setError(message[0]);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred during Login. Please try again later.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,28 +128,17 @@ export default function FlipAuthCard() {
     setIsLoading(true);
     setError("");
 
-    if (registerFormData.password !== registerFormData.confirmPassword) {
-      setError("Passwords don't match");
-      setIsLoading(false);
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(registerFormData.email)) {
-      setError('Please provide valid email address');
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      const validatedData = registerSchema.parse(registerFormData);
       const response = await fetch('http://localhost:5000/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: registerFormData.name,
-          email: registerFormData.email,
-          password: registerFormData.password,
+          name: validatedData.name,
+          email: validatedData.email,
+          password: validatedData.password,
         }),
       });
 
@@ -130,7 +153,14 @@ export default function FlipAuthCard() {
       setError("");
 
     } catch (err: any) {
-      setError(err.message || 'Something went wrong during registration. Please try again.');
+      if (err instanceof z.ZodError) {
+        const message = err.issues.map(i => i.message);
+        setError(message[0]);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred during Registration.Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

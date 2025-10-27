@@ -11,7 +11,7 @@ const Player = dynamic(
 
 export function EvaluatingQuizLoader() {
   return (
-    <div className="text-center py-8">
+    <div className="text-center py-8 ">
       <Player
         autoplay
         loop

@@ -6,38 +6,14 @@ import { useState, useRef, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Webcam from "react-webcam";
 import useSpeechToText, { ResultType } from "react-hook-speech-to-text";
-import { jwtDecode } from "jwt-decode";
 import Question from "../../../_components/QuizQuestion";
 import { Fullscreen, AlertTriangle, X, Volume2, Copy, Camera, Mic, User } from "lucide-react";
 import { PreparingQuizLoader } from "../../../_lib/PreparingQuizLoader";
 import { EvaluatingQuizLoader } from "../../../_lib/EvaluationLoader";
+import { appDB } from "../../../../lib/appDataDB";
+import type {SessionData,TimeSettings, AIQuestion} from "../../../../lib/types"
 
-interface QuizLandingData {
-  categoryTitle: string;
-  subcategoryTitle: string;
-  description: string;
-  questionsCount?: number;
-  timeLimit?: number;
-  categoryId?: string;
-}
 
-interface AIQuestion {
-  questionText: string;
-  options: string[];
-  questionType: "options" | "descriptive";
-  difficultyLevel: number;
-  questionId: string;
-}
-
-interface QuizSessionData {
-  quizId: string;
-  userId: string;
-  categoryTitle: string;
-  subcategoryTitle: string;
-  totalQuestions: number;
-  categoryId?: string;
-  currentQuestionNumber: number;
-}
 
 export default function QuizPage({ params }: { params: Promise<{ quizId: string }> }) {
   const { quizId } = use(params);
@@ -46,17 +22,19 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   const [currentQuestion, setCurrentQuestion] = useState<AIQuestion | null>(null);
   const [userAnswer, setUserAnswer] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [quizSession, setQuizSession] = useState<QuizSessionData | null>(null);
+  const [quizSession, setQuizSession] = useState<SessionData | null>(null);
   const [progress, setProgress] = useState({ current: 1, total: 3 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
   const [violationCount, setViolationCount] = useState(0);
+  const [isQuizCompleted, setIsQuizCompleted] = useState(false);
 
   const hasStartedQuiz = useRef(false);
   const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [proctoringStatus, setProctoringStatus] = useState("Initializing camera...");
+
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [cameraActive, setCameraActive] = useState(true);
   const [micActive, setMicActive] = useState(true);
@@ -65,6 +43,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -116,14 +95,6 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
           })
         );
         const faceCount = detections.length;
-
-        if (faceCount === 0) {
-          setProctoringStatus("No face detected");
-        } else if (faceCount > 1) {
-          setProctoringStatus("Multiple faces!");
-        } else {
-          setProctoringStatus("Verified");
-        }
 
         if (faceCount === 0) {
           setProctoringStatus("No face detected");
@@ -201,6 +172,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   useEffect(() => {
     const monitorDevices = async () => {
       try {
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cameras = devices.filter(device => device.kind === 'videoinput');
         const mics = devices.filter(device => device.kind === 'audioinput');
@@ -218,10 +190,12 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
         }
       } catch (err) {
         console.error("Device monitoring error:", err);
+        showWarning("Device disconnected.Please give access to avoid consequences.")
+        handleViolation("Device disconnected.Please give access to avoid consequences.")
       }
     };
-
     const deviceInterval = setInterval(monitorDevices, 5000);
+    monitorDevices();
     return () => clearInterval(deviceInterval);
   }, []);
 
@@ -259,9 +233,9 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       if (audioIntervalRef.current) {
         clearInterval(audioIntervalRef.current);
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      // if (audioContextRef.current) {
+      //   audioContextRef.current.close();
+      // }
     };
   }, []);
 
@@ -322,10 +296,6 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       console.log("Fullscreen not supported");
     }
   };
-  const exit = async () => {
-    // await document.exitFullscreen();
-
-  }
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -337,36 +307,120 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      exit();
-      stopAllMedia();
     };
   }, []);
+  const mediaCleanupDone = useRef(false); // Add this with other refs
 
-  const stopAllMedia = () => {
-    if (webcamRef.current?.video?.srcObject) {
-      const stream = webcamRef.current.video.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-    }
+const stopAllMedia = () => {
+  if (mediaCleanupDone.current) {
+    console.log("Media cleanup already completed");
+    return;
+  }
+  mediaCleanupDone.current = true;
+  
+  console.log("🛑 Stopping all media devices...");
 
-    if (isRecording) {
-      stopSpeechToText();
-    }
+  // 1. Stop webcam stream
+  if (webcamRef.current?.video?.srcObject) {
+    const stream = webcamRef.current.video.srcObject as MediaStream;
+    console.log(`Stopping ${stream.getTracks().length} media tracks`);
+    stream.getTracks().forEach(track => {
+      console.log(`Stopping ${track.kind} track`);
+      track.stop(); // This actually stops the device
+      track.enabled = false; // Disable the track
+    });
+    webcamRef.current.video.srcObject = null;
+  }
 
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-    }
-    if (audioIntervalRef.current) {
-      clearInterval(audioIntervalRef.current);
-    }
+  // 2. Stop speech-to-text
+  if (isRecording) {
+    console.log("Stopping speech-to-text");
+    stopSpeechToText();
+  }
 
-    if (proctoringIntervalRef.current) {
-      clearInterval(proctoringIntervalRef.current);
+  // 3. Stop audio context SAFELY
+  if (audioContextRef.current) {
+    console.log("AudioContext state:", audioContextRef.current.state);
+    if (audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().then(() => {
+        console.log("✅ AudioContext closed successfully");
+      }).catch(err => {
+        console.log("AudioContext close error:", err.message);
+      });
+    } else {
+      console.log("AudioContext already closed");
     }
+  }
+
+  // 4. Clear all intervals
+  if (audioIntervalRef.current) {
+    clearInterval(audioIntervalRef.current);
+    audioIntervalRef.current = null;
+  }
+  if (proctoringIntervalRef.current) {
+    clearInterval(proctoringIntervalRef.current);
+    proctoringIntervalRef.current = null;
+  }
+
+  console.log("✅ Media cleanup completed");
+};
+
+  // const stopAllMedia = () => {
+  //   if (webcamRef.current?.video?.srcObject) {
+  //     const stream = webcamRef.current.video.srcObject as MediaStream;
+  //     stream.getTracks().forEach(track => track.stop());
+  //   }
+
+  //   if (isRecording) {
+  //     stopSpeechToText();
+  //   }
+
+  //   if (audioContextRef.current) {
+  //     audioContextRef.current.close();
+  //   }
+  //   if (audioIntervalRef.current) {
+  //     clearInterval(audioIntervalRef.current);
+  //   }
+
+  //   if (proctoringIntervalRef.current) {
+  //     clearInterval(proctoringIntervalRef.current);
+  //   }
+  // };
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      console.log("handle before called with status", isQuizCompleted)
+      if (!isQuizCompleted) {
+        event.preventDefault();
+        event.returnValue = '';
+        pauseQuizSessionSync();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isQuizCompleted, progress]);
+
+  const pauseQuizSessionSync = async () => {
+    console.log("trying to pass the session");
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId || isQuizCompleted) return;
+
+    await appDB.updateSession(sessionId, {
+      status: "paused",
+      currentQuestionIndex: progress.current
+    })
+    console.log("updating indexdb", progress.current);
+    localStorage.setItem("progress", JSON.stringify(progress));
+    localStorage.removeItem('sessionId');
+    router.replace('/history')
   };
 
   useEffect(() => {
     return () => {
-      stopAllMedia();
+      // stopAllMedia();
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(console.error);
       }
@@ -381,50 +435,93 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Not logged in");
 
-        const decoded: { id: string } = jwtDecode(token);
-        const storedData = localStorage.getItem(quizId);
-        if (!storedData) throw new Error("Quiz data missing");
+        const sessionId = localStorage.getItem('sessionId');
+        if (sessionId) {
+          const sessionLoadedData = await appDB.getSession(sessionId);
+          console.log("loaded from indexdb", sessionLoadedData, sessionLoadedData?.userId);
 
-        const quizData: QuizLandingData = JSON.parse(storedData);
-        hasStartedQuiz.current = true;
 
-        const res = await fetch("http://localhost:5000/quiz/start", {
-          method: "POST",
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: decoded.id,
-            categoryId: quizData.categoryId,
-            categoryTitle: quizData.categoryTitle,
-            subcategoryTitle: quizData.subcategoryTitle,
-            questionsCount: 3,
-          }),
-        });
+          if (!sessionLoadedData) {
+            throw new Error("Session Not found.")
+          }
+          const quizData: SessionData = sessionLoadedData;
+          setQuizSession(quizData);
+          hasStartedQuiz.current = true;
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || "Failed to start quiz");
+          const categoryId = localStorage.getItem('categoryId') ?? "";
+          const quizStatus = quizData.status;
+
+          let res;
+          if (quizStatus === "preview") {
+            console.log("calling to start quiz");
+            res = await fetch("http://localhost:5000/quiz/start", {
+              method: "POST",
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: quizData.userId,
+                categoryId: categoryId,
+                categoryTitle: quizData.category,
+                subcategoryTitle: quizData.subcategory,
+                questionsCount: quizData.questionsCount,
+              }),
+            });
+          } else {
+             console.log("calling to resume quiz");
+            res = await fetch("http://localhost:5000/quiz/resume", {
+              method: "POST",
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: quizData.userId,
+                quizId: quizData.quizId
+              }),
+            });
+          }
+
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to start quiz");
+          }
+
+          const response = await res.json();
+          if (!response.success) {
+            throw new Error("Invalid quiz start response");
+          }
+
+
+          const data = response.data;
+          setCurrentQuestion(data.question);
+
+          setQuizSession((prev) => {
+            if (!prev) {
+              throw new Error("session not found")
+            }
+            return {
+              ...prev,
+              quizId: data.quizId
+            }
+          })
+
+
+          await appDB.updateSession(sessionId, ({
+            quizId: data.quizId,
+            status: 'in-progress',
+            currentQuestionIndex: data.currentQuestionNumber
+          }))
+
+
+          setProgress({ current: data.currentQuestionNumber, total: quizData.questionsCount });
+
+        } else {
+          console.warn("sessionid not found");
+          throw new Error("Session not found. Please Try again.")
         }
-
-        const response = await res.json();
-        if (!response.success) {
-          throw new Error("Invalid quiz start response");
-        }
-
-        const data = response.data;
-        setCurrentQuestion(data.question);
-        setQuizSession({
-          quizId: data.quizId,
-          userId: decoded.id,
-          categoryId: quizData.categoryId,
-          categoryTitle: quizData.categoryTitle,
-          subcategoryTitle: quizData.subcategoryTitle,
-          totalQuestions: 3,
-          currentQuestionNumber: 1,
-        });
-        setProgress({ current: 1, total: 3 });
 
       } catch (err: any) {
         console.error("Start quiz error:", err);
@@ -436,7 +533,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
     };
 
     startQuiz();
-  }, [quizId, router]);
+  }, []);
 
   const handleAnswerSubmit = async (answer: string) => {
     if (!userAnswer.trim() || !currentQuestion || !quizSession || isSubmitting) {
@@ -446,13 +543,14 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
+      const categoryId = localStorage.getItem('categoryId') ?? "";
       const payload = {
         quizData: {
           quizId: quizSession.quizId,
           userId: quizSession.userId,
-          categoryId: quizSession.categoryId,
-          categoryTitle: quizSession.categoryTitle,
-          subcategoryTitle: quizSession.subcategoryTitle,
+          categoryId: categoryId,
+          categoryTitle: quizSession.category,
+          subcategoryTitle: quizSession.subcategory,
         },
         currentQuestion: {
           questionId: currentQuestion.questionId,
@@ -468,6 +566,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
         },
         violations: violationCount,
       };
+      console.log("questions progress:", progress);
 
       const res = await fetch("http://localhost:5000/quiz/submit-answer", {
         method: "POST",
@@ -487,15 +586,35 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       const result = response.data;
 
       if (result.quizCompleted) {
-        localStorage.setItem(
-          quizSession.quizId,
-          JSON.stringify({ ...quizSession, finalScore: result.finalScore })
-        );
-        router.push(`/results/${quizSession.quizId}`);
+        setIsQuizCompleted(true);
+
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) {
+          throw new Error("Session not found. Please try again...");
+        }
+        const sessionLoadedData = await appDB.getSession(sessionId);
+        console.log("loaded from indexdb", sessionLoadedData, sessionLoadedData?.userId);
+
+        if (!sessionLoadedData) {
+          throw new Error("Session Not found.")
+        }
+
+        await appDB.updateSession(sessionId, {
+          status: "completed",
+          currentQuestionIndex: sessionLoadedData.questionsCount,
+          score: result.finalScore,
+          endTime: new Date(),
+          performanceFeedback:result.finalFeedback
+        });
+        stopAllMedia();
+        router.replace(`/results/${quizSession.quizId}`);
         return;
+      
       } else {
         setCurrentQuestion(result.nextQuestion);
         setProgress(result.progress);
+        setProgress({ current: result.progress.current, total: result.progress.total })
+        console.log("questions progress after submit:", progress);
         setQuizSession(prev => prev ? {
           ...prev,
           currentQuestionNumber: result.progress.current
@@ -715,9 +834,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 backdrop-blur-sm">
-          {/* <div className="backdrop-blur-s rounded-xl p-4 shadow-lg border border-gray-200"> */}
           <EvaluatingQuizLoader />
-          {/* </div> */}
         </div>
 
       )}

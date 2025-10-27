@@ -4,42 +4,18 @@
 import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useRouter } from "next/navigation";
-
-interface AnalyticsData {
-    totalQuizzes: number
-    averageScore: number
-    highestScore: number
-    categoryProgress: Array<{
-        category: string
-        scores: number[]
-        dates: string[]
-    }>
-    categoryDistribution: Array<{
-        category: string
-        count: number
-        percentage: number
-    }>
-    quizHistory: Array<{
-        id: string
-        date: string
-        category: string
-        subcategory: string
-        score: number
-        questionsCount: number
-        timeSpent: number
-        status: 'completed' | 'in-progress'
-    }>
-}
+import { appDB } from "../../../lib/appDataDB";
+import type {AnalyticsData} from "../../../lib/types"
 
 const generateColors = (count: number) => {
     const baseColors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#84CC16', '#06B6D4', '#F97316']
     if (count <= baseColors.length) {
         return baseColors.slice(0, count)
     }
-    
+
     const colors = [...baseColors]
     for (let i = baseColors.length; i < count; i++) {
-        const hue = (i * 137.508) % 360 
+        const hue = (i * 137.508) % 360
         colors.push(`hsl(${hue}, 70%, 65%)`)
     }
     return colors
@@ -75,8 +51,8 @@ export default function AnalyticsPage() {
             const token = localStorage.getItem('token')
             if (!token) throw new Error('No token found')
 
-            const decoded: any = JSON.parse(atob(token.split('.')[1]))
-            const userId = decoded.id
+            
+            const userId = localStorage.getItem('userId')
 
             const response = await fetch('http://localhost:5000/analytics/user', {
                 method: 'POST',
@@ -135,9 +111,46 @@ export default function AnalyticsPage() {
         }, stepDuration)
     }
 
-    const handleContinue = (quizId: string) => {
+    const handleContinue = async (quizId: string) => {
         console.log("continue quiz with id:", quizId);
-        router.push(`/continue/${quizId}`)
+
+
+        const token = localStorage.getItem('token')
+        if (!token) throw new Error('No token found')
+        const userId = localStorage.getItem('userId');
+        if (!userId) throw new Error("User ID not found");
+
+        const response = await fetch('http://localhost:5000/quiz/getdetails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ quizId })
+        })
+
+        if (!response.ok) throw new Error('Failed to fetch')
+
+        const result = await response.json();
+        const quizData = result.data;
+
+        const session = await appDB.createSession(userId, undefined, {
+            category: quizData.category,
+            categoryDescription: quizData.categoryDescription,
+            subcategory: quizData.subcategory,
+            subcategoryDescription: quizData.subcategoryDescription,
+            quizSlugId: quizData.quizSlugId,
+            questionsCount: quizData.questionsCount,
+            timeSettings: quizData.timeSettings,
+            quizId: quizData.quizId,
+            status: quizData.status,
+            currentQuestionIndex: quizData.currentQuestionIndex,
+            startTime: quizData.startTime
+        }
+        );
+        console.log(session.sessionId);
+        localStorage.setItem('sessionId', session.sessionId);
+        router.push(`/quiz/${quizId}`)
     }
 
     const handlePreview = (quizId: string) => {
@@ -199,8 +212,8 @@ export default function AnalyticsPage() {
 
     const sortedCategoryProgress = analytics?.categoryProgress.map(category => ({
         ...category,
-        scores: [...category.scores].reverse(), 
-        dates: [...category.dates].reverse()  
+        scores: [...category.scores].reverse(),
+        dates: [...category.dates].reverse()
     })) || []
 
     return (
@@ -262,7 +275,7 @@ export default function AnalyticsPage() {
                                                             key={`cell-${index}`}
                                                             fill={entry.color}
                                                             stroke="#fff"
-                                                            strokeWidth={2}
+                                                            strokeWidth={0}
                                                         />
                                                     ))}
                                                 </Pie>
@@ -311,8 +324,8 @@ export default function AnalyticsPage() {
                                             <td className="py-3 text-gray-600">{quiz.questionsCount}</td>
                                             <td className="py-3">
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${(quiz.score / (quiz.questionsCount * 10)) >= 80 ? 'bg-green-100 text-green-800' :
-                                                        (quiz.score / (quiz.questionsCount * 10)) >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-red-100 text-red-800'
+                                                    (quiz.score / (quiz.questionsCount * 10)) >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'
                                                     }`}>
                                                     {Math.round((quiz.score / (quiz.questionsCount * 10)) * 100)}%
                                                 </span>
@@ -354,7 +367,7 @@ export default function AnalyticsPage() {
                             const isExpanded = expandedCategory === category.category
                             const maxScore = Math.max(...category.scores)
                             const minScore = Math.min(...category.scores)
-                            const latestScore = category.scores[0] 
+                            const latestScore = category.scores[category.scores.length - 1]
 
                             return (
                                 <div key={category.category}>

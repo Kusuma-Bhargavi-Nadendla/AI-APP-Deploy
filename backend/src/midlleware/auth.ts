@@ -9,7 +9,7 @@ declare global {
 }
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    console.log("Auth middleware invoked");
+    console.log("Auth middleware invoked",req.body,req.method,req.url);
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
@@ -24,6 +24,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     const decoded = AuthService.validateToken(token);
     req.user = decoded; 
     next();
+    console.log("peoceeding")
     
   } catch (error: any) {
     console.error('Auth middleware error:', error);

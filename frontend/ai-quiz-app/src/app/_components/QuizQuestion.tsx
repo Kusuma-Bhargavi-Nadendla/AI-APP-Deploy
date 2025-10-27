@@ -1,29 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { Mic, Square, RotateCcw, Plus } from "lucide-react";
+import type {QuestionProps} from "../../lib/types"
 
-interface QuestionProps {
-  questionText: string;
-  questionType: "multiple_choice" | "descriptive";
-  options?: string[];
-  mode: "quiz" | "preview" | "practice";
-  currentQuestion?: number;
-  totalQuestions?: number;
-  correctAnswer?: string;
-  userAnswer?: string;
-  score?: number;
-  explanation?: string;
-  onAnswer?: (answer: string) => void;
-  onNext?: () => void;
-  onRecord?: (isRecording: boolean) => void;
-  timeSettings?: {
-    questionTimeLimit?: number;
-    totalTimeLimit?: number;
-    elapsedTotalTime?: number;
-  };
-  onClearRecording?: () => void;
-
-}
 
 export default function Question({
   questionText,

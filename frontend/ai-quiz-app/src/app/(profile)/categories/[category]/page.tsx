@@ -11,29 +11,8 @@ import { getCachedSubcategories, setCachedSubcategories } from "../../../../lib/
 import { getRandomColor } from "../../../_lib/utils";
 import { setCachedResults, getCachedSearchSubcategories } from "../../../../lib/searchCache"
 import { appDB } from "../../../../lib/appDataDB";
-interface Subcategory {
-  id: string;
-  name: string;
-  description: string;
-  usersTaken?: number;
-  trending?: boolean;
-  isNew?: boolean;
-  color?: string;
-}
-
-interface QuizLandingData {
-  categoryTitle: string;
-  subcategoryTitle: string;
-  description: string;
-  questionsCount?: number;
-  timeLimit?: number;
-  categoryId?: string;
-}
-
-interface CacheInfo {
-  cached: boolean;
-  age?: string;
-}
+import type {Subcategory, QuizLandingData,CacheInfo} from "../../../../lib/types"
+import type { PageProps} from "../../../../lib/types"
 
 function normalizeCategoryTitle(title: string): string {
   return title.trim().toLowerCase();
@@ -106,15 +85,6 @@ async function fetchSubcategories(
     }
   };
 }
-
-
-interface PageProps {
-  params: Promise<{
-    category: string;
-  }>;
-
-}
-
 
 export default function CategoryClient({ params }: PageProps) {
   const resolvedParams = use(params);
@@ -192,7 +162,7 @@ export default function CategoryClient({ params }: PageProps) {
               isNew: item.isNew,
               color: getRandomColor() || 'bg-white',
             }));
-            console.log(searchQuery, currentQuery);
+            console.log("2 queries",searchQuery, currentQuery);
             // if (searchQuery === currentQuery) {
             setSubcategories(mappedSearchResults);
             // } else if (searchQuery.length === 0) {
@@ -340,8 +310,8 @@ export default function CategoryClient({ params }: PageProps) {
     };
 
     const quizId = `quiz_${Date.now()}`;
-    localStorage.setItem('quizId', quizId);
-    localStorage.setItem(quizId, JSON.stringify(quizData));
+    // localStorage.setItem('quizId', quizId);
+    // localStorage.setItem(quizId, JSON.stringify(quizData));
 
     const sessionId = localStorage.getItem('sessionId');
     if (sessionId) {

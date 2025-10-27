@@ -4,16 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { TrendingUp, Sparkles, ArrowRight, Users } from "lucide-react";
-
-interface SubcategoryCardProps {
-  subcategoryTitle: string;
-  subcategoryDescription: string;
-  usersTaken?: number;
-  trending?: boolean;
-  isNew?: boolean;
-  color?: string;
-  onStartTest: () => void;
-}
+import type {SubcategoryCardProps} from "../../lib/types"
 
 export default function SubcategoryCard({
   subcategoryTitle,

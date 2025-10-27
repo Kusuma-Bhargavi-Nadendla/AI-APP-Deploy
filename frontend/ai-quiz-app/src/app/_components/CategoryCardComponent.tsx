@@ -1,20 +1,9 @@
-
-
-
 import { Card, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { useRouter } from "next/navigation";
 import { ArrowRight, TrendingUp } from "lucide-react";
-
-interface CategoryCardProps {
-  categoryTitle: string;
-  description?: string;
-  trending?: boolean;
-  color?: string;
-  id?: string;
-  onArrowClick: () => void;
-}
+import type {CategoryCardProps} from "../../lib/types"
 
 export default function CategoryCardComponent({
   id,

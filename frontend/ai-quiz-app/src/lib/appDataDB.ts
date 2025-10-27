@@ -32,6 +32,7 @@ interface SessionData {
     status: 'preview' | 'in-progress' | 'completed' | 'paused';
     currentQuestionIndex: number;
     score?: number;
+    performanceFeedback?:string;
     startTime: Date;
     endTime?: Date;
     updatedAt: Date;
@@ -56,7 +57,6 @@ export const initDB = async (): Promise<IDBPDatabase> => {
 
 class AppDB {
     private db: IDBPDatabase | null = null;
-    private currentUserId: string | null = null;
 
     async ensureDB(): Promise<IDBPDatabase> {
         if (!this.db) {
@@ -76,7 +76,7 @@ class AppDB {
         };
         await db.put('userData', user);
 
-        this.currentUserId = userData.userId;
+        
         return user;
     }
 
@@ -84,12 +84,7 @@ class AppDB {
         const db = await this.ensureDB();
         return await db.get('userData', userId);
     }
-    async getUserId(): Promise<string | null> {
-        if (this.currentUserId) {
-            return this.currentUserId;
-        }
-        return null;
-    }
+
 
     async updateUser(userId: string, updates: Partial<UserData>): Promise<UserData | null> {
         const db = await this.ensureDB();
@@ -102,89 +97,129 @@ class AppDB {
         return null;
     }
 
-    async createSession(userId: string, categoryData: { category: string; description: string }): Promise<SessionData> {
+    async createSession(userId: string, categoryData?: { category: string; description: string },
+        existingSession?: {
+            category: string;
+            categoryDescription: string;
+            subcategory: string;
+            subcategoryDescription: string;
+            quizSlugId: string;
+            questionsCount: number;
+            timeSettings: TimeSettings;
+            quizId: string;
+            status: string;
+            currentQuestionIndex: number;
+            startTime: Date;
+        }
+    ): Promise<SessionData> {
         const db = await this.ensureDB();
+
         const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        const session: SessionData = {
-            sessionId,
-            userId,
-            category: categoryData.category,
-            categoryDescription: categoryData.description,
-            subcategory: '',
-            subcategoryDescription: '',
-            quizSlugId: '',
-            questionsCount: 0,
-            timeSettings: {
-                totalEnabled: false,
-                perQuestionEnabled: false
-            },
-            quizId: '',
-            status: 'preview',
-            currentQuestionIndex: 0,
-            startTime: new Date(),
-            updatedAt: new Date()
-        };
+        let session:SessionData;
 
-        await db.put('sessionData', session);
+        if (existingSession) {
+            const existing = existingSession;
 
-        await this.updateUser(userId, { currentSessionId: sessionId });
-
-        return session;
-    }
-
-    async getCurrentCategoryDetails(sessionId: string) {
-        const db = await this.ensureDB();
-        const session = await db.get('sessionData', sessionId);
-        return {
-            category: session.category,
-            categoryDescription: session.categoryDescription,
-            subcategory: session.subcategory,
-            subcategoryDescription: session.subcategoryDescription
-        }
-    }
-
-    async updateSession(sessionId: string, updates: Partial<SessionData>): Promise<SessionData | null> {
-        const db = await this.ensureDB();
-        const session = await db.get('sessionData', sessionId);
-        if (session) {
-            const updatedSession: SessionData = {
-                ...session,
-                ...updates,
+            session = {
+                sessionId,
+                userId,
+                category: existing.category,
+                categoryDescription: existing.categoryDescription,
+                subcategory: existing.subcategory,
+                subcategoryDescription: existing.subcategoryDescription,
+                quizSlugId: existing.quizSlugId,
+                questionsCount: existing.questionsCount,
+                timeSettings: existing.timeSettings,
+                quizId: existing.quizId,
+                status: 'paused',
+                currentQuestionIndex: existing.currentQuestionIndex,
+                startTime:existing.startTime || new Date(),
+                updatedAt: new Date(),
+            }
+        }else{
+            const cat = categoryData?.category||"";
+            const catDes=categoryData?.description||"";
+            session= {
+                sessionId,
+                userId,
+                category: cat,
+                categoryDescription: catDes,
+                subcategory: '',
+                subcategoryDescription: '',
+                quizSlugId: '',
+                questionsCount: 0,
+                timeSettings: {
+                    totalEnabled: false,
+                    perQuestionEnabled: false
+                },
+                quizId: '',
+                status: 'preview',
+                currentQuestionIndex: 0,
+                startTime: new Date(),
                 updatedAt: new Date()
             };
-            await db.put('sessionData', updatedSession);
-            return updatedSession;
         }
-        return null;
-    }
-    async getQuizPreviewData(sessionId: string) {
-        const session = await this.getSession(sessionId);
-        if (session) {
+
+            await db.put('sessionData', session);
+
+            await this.updateUser(userId, { currentSessionId: sessionId });
+
+            return session;
+        }
+
+    async getCurrentCategoryDetails(sessionId: string) {
+            const db = await this.ensureDB();
+            const session = await db.get('sessionData', sessionId);
             return {
-                quizId: session.quizId,
-                userId:session.userId
+                category: session.category,
+                categoryDescription: session.categoryDescription,
+                subcategory: session.subcategory,
+                subcategoryDescription: session.subcategoryDescription
             }
         }
 
-    }
+    async updateSession(sessionId: string, updates: Partial<SessionData>): Promise < SessionData | null > {
+            const db = await this.ensureDB();
+            const session = await db.get('sessionData', sessionId);
+            if(session) {
+                const updatedSession: SessionData = {
+                    ...session,
+                    ...updates,
+                    updatedAt: new Date()
+                };
+                await db.put('sessionData', updatedSession);
+                return updatedSession;
+            }
+        return null;
+        }
+    async getQuizPreviewData(sessionId: string) {
+            const session = await this.getSession(sessionId);
+            if (session) {
+                return {
+                    quizId: session.quizId,
+                    userId: session.userId
+                }
+            }
 
-    async getCurrentSession(userId: string): Promise<SessionData | null> {
-        const user = await this.getUser(userId);
-        if (!user?.currentSessionId) return null;
+        }
 
-        const db = await this.ensureDB();
-        return await db.get('sessionData', user.currentSessionId);
-    }
+    async getCurrentSession(userId: string): Promise < SessionData | null > {
+            const user = await this.getUser(userId);
+            if(!user?.currentSessionId) return null;
 
-    async getSession(sessionId: string): Promise<SessionData | undefined> {
-        const db = await this.ensureDB();
-        return await db.get('sessionData', sessionId);
-    }
+            const db = await this.ensureDB();
+            return await db.get('sessionData', user.currentSessionId);
+        }
 
-    async pauseSession(userId: string): Promise<void> {
-        const session = await this.getCurrentSession(userId);
-        if (session && session.status === 'in-progress') {
+    async getSession(sessionId: string): Promise < SessionData | undefined > {
+            const db = await this.ensureDB();
+            return await db.get('sessionData', sessionId);
+        }
+
+    async pauseSession(userId: string): Promise < void> {
+            const session = await this.getCurrentSession(userId);
+            if(session && session.status === 'in-progress') {
             await this.updateSession(session.sessionId, {
                 status: 'paused',
                 endTime: new Date()

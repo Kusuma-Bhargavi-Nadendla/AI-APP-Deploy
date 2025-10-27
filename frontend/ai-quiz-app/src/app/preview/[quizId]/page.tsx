@@ -7,33 +7,8 @@ import { jwtDecode } from "jwt-decode";
 import Question from "../../_components/QuizQuestion";
 import { ChevronLeft, ChevronRight, BarChart3, Calendar, FileText, Award, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
-interface QuizRecord {
-  _id: string;
-  question: string;
-  options: string[];
-  questionType: "options" | "descriptive";
-  difficultyLevel: number;
-  questionId: string;
-  correctAnswer?: string;
-  userAnswer?: string;
-  explanation?: string;
-  score: number;
-  sequenceNumber: number;
-}
-
-interface QuizPreviewData {
-  quizId: string;
-  records: QuizRecord[];
-  totalScore: number;
-  totalQuestions: number;
-  categoryTitle: string;
-  subcategoryTitle: string;
-  completedAt?: string;
-  evaluation?: string;
-  status: string;
-  startedAt?: string;
-  questionsCount: number;
-}
+import type {QuizRecord,QuizPreviewData} from "../../../lib/types"
+import { PreviewQuizLoader } from "../../_lib/PreviewLoader"
 
 export default function QuizPreviewPage() {
   const params = useParams();
@@ -42,6 +17,7 @@ export default function QuizPreviewPage() {
   const [quizPreview, setQuizPreview] = useState<QuizPreviewData | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showContent,setShowContent]=useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -50,8 +26,8 @@ export default function QuizPreviewPage() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Not logged in");
 
-        const decoded: { id: string } = jwtDecode(token);
-        const userId = decoded.id;
+        const userId =localStorage.getItem('userId');
+        if(!userId) throw new Error("User ID Not found");
 
         const res = await fetch(`http://localhost:5000/quiz/preview/${quizId}`, {
           method: "POST",
@@ -82,7 +58,15 @@ export default function QuizPreviewPage() {
       }
     };
 
+    const fetchPromise = fetchQuizPreview();
     fetchQuizPreview();
+    const timerPromise = new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Wait for both API call and minimum 3 seconds to complete
+    Promise.all([fetchPromise, timerPromise]).finally(() => {
+      setIsLoading(false);
+      setShowContent(true);
+    });
   }, [quizId]);
 
   const handleNextQuestion = () => {
@@ -105,12 +89,13 @@ export default function QuizPreviewPage() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || !showContent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <div className="text-slate-600 text-sm">Loading quiz preview...</div>
+          {/* <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <div className="text-slate-600 text-sm">Loading quiz preview...</div> */}
+          <PreviewQuizLoader/>
         </div>
       </div>
     );

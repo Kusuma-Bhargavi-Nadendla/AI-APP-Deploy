@@ -8,14 +8,7 @@ import { getRandomColor } from "../../_lib/utils";
 import { setCachedResults, cleanupExpiredCache, getCachedSearchCategories } from "../../../lib/searchCache"
 import { cleanupExpiredSubcategoryCache } from "../../../lib/subCategoryCache"
 import { appDB } from "../../../lib/appDataDB";
-interface CategoryCardProps {
-  categoryTitle: string;
-  description?: string;
-  trending?: boolean;
-  color?: string;
-  id?: string;
-  onArrowClick: () => void;
-}
+import type {CategoryCardProps} from "../../../lib/types"
 
 export default function Home() {
   const [categories, setCategories] = useState<CategoryCardProps[]>([]);
@@ -27,6 +20,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchQuerySent,setSearchQuerySent] = useState("");
   const [cacheInfo, setCacheInfo] = useState<{
     cached: boolean;
     age?: string;
@@ -131,6 +125,7 @@ export default function Home() {
       searchTimeoutRef.current = setTimeout(async () => {
         if (searchQuery.length === 0) return;
         try {
+          setSearchQuerySent(query);
           const res = await fetch("http://localhost:5000/categories/Search", {
             method: "POST",
             headers: {
@@ -139,9 +134,9 @@ export default function Home() {
             },
             body: JSON.stringify({ search: query }),
           });
+
           if (res.ok) {
             const result = await res.json();
-            // const searchData = await result.response;
             const searchData = result.data;
             console.log("Search results:", searchData.length, searchData)
             const mappedSearchResults = searchData.map((item: any) => ({
@@ -150,9 +145,9 @@ export default function Home() {
               description: item.description,
               trending: item.trending || false,
               color: getRandomColor() || "bg-white",
-              onArrowClick: () => handleCardClick(item),
+              onArrowClick: () => handleCardClick({id:item.id,title:item.name,description:item.description}),
             }));
-            console.log(searchQuery, currentQuery);
+            console.log(searchQuery, currentQuery,searchQuerySent);
             // if(searchQuery === currentQuery){
             setCategories(mappedSearchResults);
             // }else if(searchQuery.length === 0){
@@ -270,8 +265,8 @@ export default function Home() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    const userId = await appDB.getUserId();
-    console.log(userId, "got from indexdb");
+    const userId = localStorage.getItem('userId');
+    console.log(userId, "got from LS");
     if (userId) {
       const session = await appDB.createSession(userId!, {
         category: title,

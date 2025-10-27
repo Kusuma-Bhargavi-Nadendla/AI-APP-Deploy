@@ -10,5 +10,6 @@ router.post('/start', quizController.startQuiz);
 router.post('/submit-answer', quizController.submitAnswer);
 router.post('/resume', quizController.resumeQuiz);
 router.post('/preview/:quizId', quizController.getQuizPreview);
+router.post('/getdetails',quizController.getQuizDetailsById);
 
 export default router;

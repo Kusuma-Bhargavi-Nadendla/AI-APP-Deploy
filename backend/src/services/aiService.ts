@@ -191,7 +191,7 @@ IMPORTANT:
     return await this.generateContent(prompt);
   }
 
-static async generateSubcategories(category: string, existingSubcategories: string[] = []) {
+  static async generateSubcategories(category: string, existingSubcategories: string[] = []) {
     const prompt = `
     Generate exactly 10 diverse and relevant subcategories for the main quiz category: "${category}".
     
@@ -222,7 +222,7 @@ static async generateSubcategories(category: string, existingSubcategories: stri
     Return ONLY valid JSON.
     `;
     return await this.generateContent(prompt);
-}
+  }
 
   static async generateSubcategoriesBySearch(categoryTitle: string, search: string, existingSubcategories: string[] = []) {
     const prompt = `
@@ -353,47 +353,88 @@ static async generateSubcategories(category: string, existingSubcategories: stri
     return await this.generateContent(prompt);
   }
 
-  static async generateQuizEvaluation(totalScore: number, maxPossibleScore: number, quizRecords: any[]) {
-    const correctAnswers = quizRecords.filter(record => record.score > 5).length;
-    const incorrectAnswers = quizRecords.length - correctAnswers;
+  // static async generateQuizEvaluation(totalScore: number, maxPossibleScore: number, quizRecords: any[]) {
+  //   const correctAnswers = quizRecords.filter(record => record.score > 5).length;
+  //   const incorrectAnswers = quizRecords.length - correctAnswers;
 
-    const prompt = `
-    Generate a brief evaluation and feedback for a quiz performance:
-    
-    TOTAL SCORE: ${totalScore}/${maxPossibleScore}
-    TOTAL QUESTIONS: ${quizRecords.length}
-    PERFORMANCE BREAKDOWN:
-    - Questions with good scores: ${correctAnswers}
-    - Questions needing improvement: ${incorrectAnswers}
-    - Overall performance: ${totalScore}/${maxPossibleScore}
-    
-    Generate a constructive evaluation that:
-    1. Acknowledges their performance level based on the ${totalScore}/${maxPossibleScore} score
-    2. Provides specific feedback based on their score pattern
-    3. Suggests areas for improvement or next steps
-    4. Is encouraging and motivational
-    5. Keep it brief (2-3 sentences)
-    
-    Examples:
-    - For high scores >=80%: "Excellent performance! You have strong grasp of the concepts. Consider exploring advanced topics to further enhance your skills."
-    - For medium scores >=50% and <80%: "Good effort! You understand the basics well. Focus on practicing more complex scenarios to improve your accuracy."
-    - For low scores <50%: "You've made a good start! Review the fundamental concepts and try again. Consistent practice will help you improve significantly."
-    
-    Return only the evaluation text as a string, no JSON.
-    `;
+  //   const prompt = `
+  //   Generate a brief evaluation and feedback for a quiz performance:
+
+  //   TOTAL SCORE: ${totalScore}/${maxPossibleScore}
+  //   TOTAL QUESTIONS: ${quizRecords.length}
+  //   PERFORMANCE BREAKDOWN:
+  //   - Questions with good scores: ${correctAnswers}
+  //   - Questions needing improvement: ${incorrectAnswers}
+  //   - Overall performance: ${totalScore}/${maxPossibleScore}
+
+  //   Generate a constructive evaluation that:
+  //   1. Acknowledges their performance level based on the ${totalScore}/${maxPossibleScore} score
+  //   2. Provides specific feedback based on their score pattern
+  //   3. Suggests areas for improvement or next steps
+  //   4. Is encouraging and motivational
+  //   5. Keep it brief (2-3 sentences)
+
+  //   Examples:
+  //   - For high scores >=80%: "Excellent performance! You have strong grasp of the concepts. Consider exploring advanced topics to further enhance your skills."
+  //   - For medium scores >=50% and <80%: "Good effort! You understand the basics well. Focus on practicing more complex scenarios to improve your accuracy."
+  //   - For low scores <50%: "You've made a good start! Review the fundamental concepts and try again. Consistent practice will help you improve significantly."
+
+  //   Return only the evaluation text as a string, no JSON.
+  //   `;
+
+  //   try {
+  //     return await this.generateContent(prompt);
+  //   } catch (error) {
+  //     console.error('Error generating quiz evaluation:', error);
+
+  //     if (totalScore / maxPossibleScore >= 0.8) {
+  //       return "Great job! You demonstrated excellent understanding of the material.";
+  //     } else if (totalScore / maxPossibleScore >= 0.5) {
+  //       return "Good work! You have a solid foundation. Keep practicing to improve further.";
+  //     } else {
+  //       return "You're on the right track! Review the concepts and try again to improve your score.";
+  //     }
+  //   }
+  // }
+  static async generateQuizEvaluation(totalScore: number, maxPossibleScore: number, quizRecords: any[]): Promise<string> {
+    const correctAnswers = quizRecords.filter(record => record.score > 5).length;
+    const totalQuestions = quizRecords.length;
+    const performancePercentage = (totalScore / maxPossibleScore) * 100;
+
+    const allQuestions = quizRecords.map(record => record.questionText);
+    const correctQuestions = quizRecords.filter(record => record.score > 5).map(record => record.question);
+    const incorrectQuestions = quizRecords.filter(record => record.score <= 5).map(record => record.question);
+
+      const prompt = `
+Generate exactly 4 lines of feedback for quiz performance.
+
+Score: ${totalScore}/${maxPossibleScore} (${correctAnswers}/${totalQuestions} correct)
+
+Correct questions: ${correctQuestions.join(' | ')}
+Incorrect questions: ${incorrectQuestions.join(' | ')}
+
+Provide exactly 4 lines:
+Line 1: Strength areas from correct answers
+Line 2: Areas with partial understanding  
+Line 3: Improvement areas from incorrect answers
+Line 4: Next topics to explore
+
+Keep each line concise and specific. Give 4 lines with content, but don't specify like Line 1 etc..
+`;
 
     try {
       return await this.generateContent(prompt);
     } catch (error) {
       console.error('Error generating quiz evaluation:', error);
 
-      if (totalScore / maxPossibleScore >= 0.8) {
-        return "Great job! You demonstrated excellent understanding of the material.";
-      } else if (totalScore / maxPossibleScore >= 0.5) {
-        return "Good work! You have a solid foundation. Keep practicing to improve further.";
+      if (performancePercentage >= 80) {
+        return `Excellent ${totalScore}/${maxPossibleScore} performance! You demonstrated strong understanding across multiple topics. Your high accuracy shows good conceptual grasp. Consider exploring more advanced related topics to continue your learning journey.`;
+      } else if (performancePercentage >= 50) {
+        return `Good ${totalScore}/${maxPossibleScore} score! You have a solid foundation with clear strengths in several areas. Focus on practicing the types of questions you found challenging to improve your overall mastery. Keep building on your current knowledge.`;
       } else {
-        return "You're on the right track! Review the concepts and try again to improve your score.";
+        return `You completed the quiz with ${totalScore}/${maxPossibleScore}. This is a valuable learning opportunity. Review the fundamental concepts from the questions you missed, and practice similar problems to build your understanding. Every attempt brings you closer to mastery!`;
       }
     }
   }
+  
 }

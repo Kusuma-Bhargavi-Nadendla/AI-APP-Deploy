@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
-import { appDB } from "../../lib/appDataDB";
 export default function DashboardLayout({
     children,
 }: {
@@ -44,23 +43,12 @@ export default function DashboardLayout({
         const route = navigation.find(item => item.path === pathname);
         return route ? route.name : 'Dashboard';
     };
-    // const checkUserDetails = async () => {
-    //     const userId = await appDB.getUserId();
-    //     let userDetails;
-    //     if (userId) {
-    //         userDetails = await appDB.getUser(userId);
-    //         console.log("User Details from DB:",userDetails);
-    //     }
-    // }
-    // checkUserDetails();
 
     useEffect(() => {
         const jwtToken = localStorage.getItem("token");
         if (jwtToken) {
             try {
                 const decoded: { id: string; name: string, email:string } = jwtDecode(jwtToken);
-                // console.log("User details from LS:",decoded)
-
                 setUserName(decoded.name);
             } catch (error) {
                 router.push("/");
