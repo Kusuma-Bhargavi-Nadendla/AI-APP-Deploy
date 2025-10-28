@@ -4,9 +4,9 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
-import { Share2, Home, RotateCcw, Award, Clock, Target, BarChart3, Sparkles, Eye , TrendingUp, Zap, Brain} from "lucide-react";
+import {  Home, Award, Clock, Target, BarChart3, Sparkles, Eye , TrendingUp} from "lucide-react";
 import { appDB } from "../../../lib/appDataDB";
-import type {SessionData,TimeSettings} from "../../../lib/types"
+import type {SessionData} from "../../../lib/types"
 
 
 export default function ResultsPage({

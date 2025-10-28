@@ -4,11 +4,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
+// import { jwtDecode } from "jwt-decode";
 import Question from "../../_components/QuizQuestion";
 import { ChevronLeft, ChevronRight, BarChart3, Calendar, FileText, Award, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type {QuizRecord,QuizPreviewData} from "../../../lib/types"
+import type {QuizPreviewData} from "../../../lib/types"
 import { PreviewQuizLoader } from "../../_lib/PreviewLoader"
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function QuizPreviewPage() {

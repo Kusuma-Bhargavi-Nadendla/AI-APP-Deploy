@@ -6,7 +6,7 @@ import { cn } from "../_lib/utils";
 import { useRouter } from 'next/navigation';
 import { validateToken } from '../_lib/validateAuth';
 import { appDB } from "../../lib/appDataDB";
-import { jwtDecode } from 'jwt-decode';
+// import { jwtDecode } from 'jwt-decode';
 
 import { z } from 'zod';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 import previewAnimation from "../../../public/previewLoading.json"
 
 const Player = dynamic(

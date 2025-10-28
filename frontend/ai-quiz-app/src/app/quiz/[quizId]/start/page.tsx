@@ -6,7 +6,7 @@ import * as faceapi from "face-api.js";
 import { useState, useRef, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Webcam from "react-webcam";
-import useSpeechToText, { ResultType } from "react-hook-speech-to-text";
+import useSpeechToText from "react-hook-speech-to-text";
 import Question from "../../../_components/QuizQuestion";
 import {
   Fullscreen,
@@ -23,7 +23,6 @@ import { EvaluatingQuizLoader } from "../../../_lib/EvaluationLoader";
 import { appDB } from "../../../../lib/appDataDB";
 import type {
   SessionData,
-  TimeSettings,
   AIQuestion,
 } from "../../../../lib/types";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -32,7 +31,7 @@ export default function QuizPage({
 }: {
   params: Promise<{ quizId: string }>;
 }) {
-  const { quizId } = use(params);
+  // const { quizId } = use(params);
   const router = useRouter();
 
   const [currentQuestion, setCurrentQuestion] = useState<AIQuestion | null>(
