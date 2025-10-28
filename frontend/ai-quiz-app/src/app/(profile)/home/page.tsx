@@ -10,7 +10,7 @@ import { setCachedResults, cleanupExpiredCache, getCachedSearchCategories } from
 import { cleanupExpiredSubcategoryCache } from "../../../lib/subCategoryCache"
 import { appDB } from "../../../lib/appDataDB";
 import type {CategoryCardProps} from "../../../lib/types"
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function Home() {
   const [categories, setCategories] = useState<CategoryCardProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function Home() {
     console.log("Loading categories...");
     const categoriesTitles = categories.map((item) => item.categoryTitle);
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/categories", {
+    const res = await fetch(`${API_URL}/categories`, {
       method: "POST",
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -127,7 +127,7 @@ export default function Home() {
         if (searchQuery.length === 0) return;
         try {
           setSearchQuerySent(query);
-          const res = await fetch("http://localhost:5000/categories/Search", {
+          const res = await fetch(`${API_URL}/categories/Search`, {
             method: "POST",
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -238,7 +238,7 @@ export default function Home() {
       setIsLoading(true);
       const token = localStorage.getItem("token");
 
-      const clearRes = await fetch("http://localhost:5000/categories/clearCache", {
+      const clearRes = await fetch(`${API_URL}/categories/clearCache`, {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${token}`,
