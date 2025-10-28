@@ -9,7 +9,7 @@ import { appDB } from "../../lib/appDataDB";
 import { jwtDecode } from 'jwt-decode';
 
 import { z } from 'zod';
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const loginSchema = z.object({
   email: z.string().email("Please provide a valid email address"),
   password: z.string().min(1, "Password is required"),
@@ -86,7 +86,7 @@ export default function FlipAuthCard() {
 
     try {
       const validatedData = loginSchema.parse(loginFormData);
-      const response = await fetch("http://localhost:5000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export default function FlipAuthCard() {
 
     try {
       const validatedData = registerSchema.parse(registerFormData);
-      const response = await fetch('http://localhost:5000/auth/register', {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

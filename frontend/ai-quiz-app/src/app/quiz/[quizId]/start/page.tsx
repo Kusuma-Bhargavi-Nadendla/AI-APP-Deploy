@@ -26,7 +26,7 @@ import type {
   TimeSettings,
   AIQuestion,
 } from "../../../../lib/types";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function QuizPage({
   params,
 }: {
@@ -478,7 +478,7 @@ export default function QuizPage({
             if (quizStatus === "preview") {
               console.log("calling to start quiz");
               setIsLoading(true);
-              res = await fetch("http://localhost:5000/quiz/start", {
+              res = await fetch(`${API_URL}/quiz/start`, {
                 method: "POST",
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -494,7 +494,7 @@ export default function QuizPage({
               });
             } else {
               console.log("calling to resume quiz");
-              res = await fetch("http://localhost:5000/quiz/resume", {
+              res = await fetch(`${API_URL}/quiz/resume`, {
                 method: "POST",
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -596,7 +596,7 @@ export default function QuizPage({
       };
       console.log("questions progress:", progress);
 
-      const res = await fetch("http://localhost:5000/quiz/submit-answer", {
+      const res = await fetch(`${API_URL}/quiz/submit-answer`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

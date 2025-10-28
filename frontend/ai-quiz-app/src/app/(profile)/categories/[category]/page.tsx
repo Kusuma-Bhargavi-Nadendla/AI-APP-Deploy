@@ -14,7 +14,7 @@ import { setCachedResults, getCachedSearchSubcategories } from "../../../../lib/
 import { appDB } from "../../../../lib/appDataDB";
 import type { Subcategory, QuizLandingData, CacheInfo } from "../../../../lib/types"
 import type { PageProps } from "../../../../lib/types"
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 function normalizeCategoryTitle(title: string): string {
   return title.trim().toLowerCase();
 }
@@ -46,7 +46,7 @@ async function fetchSubcategories(
   }
 
   const token = localStorage.getItem('token');
-  const res = await fetch("http://localhost:5000/categories/subcategories", {
+  const res = await fetch(`${API_URL}/categories/subcategories`, {
     method: "POST",
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -140,7 +140,7 @@ export default function CategoryClient({ params }: PageProps) {
         const token = localStorage.getItem('token');
         try {
           const res = await fetch(
-            "http://localhost:5000/categories/subcategories/search",
+            `${API_URL}/categories/subcategories/search`,
             {
               method: "POST",
               headers: {

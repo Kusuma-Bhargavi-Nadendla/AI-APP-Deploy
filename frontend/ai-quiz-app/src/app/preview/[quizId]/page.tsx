@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight, BarChart3, Calendar, FileText, Award, Clock 
 import { useRouter } from "next/navigation";
 import type {QuizRecord,QuizPreviewData} from "../../../lib/types"
 import { PreviewQuizLoader } from "../../_lib/PreviewLoader"
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function QuizPreviewPage() {
   const params = useParams();
   const quizId = params.quizId as string;
@@ -30,7 +30,7 @@ export default function QuizPreviewPage() {
         const userId =localStorage.getItem('userId');
         if(!userId) throw new Error("User ID Not found");
 
-        const res = await fetch(`http://localhost:5000/quiz/preview/${quizId}`, {
+        const res = await fetch(`${API_URL}/quiz/preview/${quizId}`, {
           method: "POST",
           headers: {
             'Authorization': `Bearer ${token}`,
