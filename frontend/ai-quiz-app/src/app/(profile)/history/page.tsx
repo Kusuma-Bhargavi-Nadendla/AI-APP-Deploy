@@ -6,7 +6,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useRouter } from "next/navigation";
 import { appDB } from "../../../lib/appDataDB";
 import type {AnalyticsData} from "../../../lib/types"
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const generateColors = (count: number) => {
     const baseColors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#84CC16', '#06B6D4', '#F97316']
     if (count <= baseColors.length) {
@@ -54,7 +54,7 @@ export default function AnalyticsPage() {
             
             const userId = localStorage.getItem('userId')
 
-            const response = await fetch('http://localhost:5000/analytics/user', {
+            const response = await fetch('/analytics/user', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
         const userId = localStorage.getItem('userId');
         if (!userId) throw new Error("User ID not found");
 
-        const response = await fetch('http://localhost:5000/quiz/getdetails', {
+        const response = await fetch(`${API_URL}/quiz/getdetails`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

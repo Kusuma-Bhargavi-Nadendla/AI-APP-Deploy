@@ -12,7 +12,7 @@ import { PreparingQuizLoader } from "../../../_lib/PreparingQuizLoader";
 import { EvaluatingQuizLoader } from "../../../_lib/EvaluationLoader";
 import { appDB } from "../../../../lib/appDataDB";
 import type {SessionData,TimeSettings, AIQuestion} from "../../../../lib/types"
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 
 export default function QuizPage({ params }: { params: Promise<{ quizId: string }> }) {
@@ -454,7 +454,7 @@ const stopAllMedia = () => {
           let res;
           if (quizStatus === "preview") {
             console.log("calling to start quiz");
-            res = await fetch("http://localhost:5000/quiz/start", {
+            res = await fetch(`${API_URL}/quiz/start`, {
               method: "POST",
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -470,7 +470,7 @@ const stopAllMedia = () => {
             });
           } else {
              console.log("calling to resume quiz");
-            res = await fetch("http://localhost:5000/quiz/resume", {
+            res = await fetch(`${API_URL}/quiz/resume`, {
               method: "POST",
               headers: {
                 'Authorization': `Bearer ${token}`,

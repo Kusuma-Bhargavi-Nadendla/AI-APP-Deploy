@@ -31,6 +31,7 @@ const registerSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function FlipAuthCard() {
 
@@ -85,7 +86,8 @@ export default function FlipAuthCard() {
 
     try {
       const validatedData = loginSchema.parse(loginFormData);
-      const response = await fetch("http://localhost:5000/auth/login", {
+      // const response = await fetch("http://localhost:5000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -130,7 +132,7 @@ export default function FlipAuthCard() {
 
     try {
       const validatedData = registerSchema.parse(registerFormData);
-      const response = await fetch('http://localhost:5000/auth/register', {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
