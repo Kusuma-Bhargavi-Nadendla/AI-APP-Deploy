@@ -22,6 +22,14 @@ app.use('/categories', categoryRoutes);
 app.use('/quiz', quizRoutes);
 app.use('/analytics', analyticsRoutes);
 
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'AI Quiz Backend is running successfully!',
+    status: 'active',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Global error handler:', error);
@@ -34,10 +42,19 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
   });
 });
 
-const PORT = process.env.PORT || 5000;
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    service: 'AI Quiz API',
+    timestamp: new Date().toISOString()
+  });
+});
 
-app.listen(PORT, () => {
-  console.log(` Server running on http://localhost:${PORT}`);
+const PORT: number = parseInt(process.env.PORT ?? '5000', 10);
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log('Connected to MongoDB');
 });
 
 export default app;
