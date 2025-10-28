@@ -74,101 +74,32 @@ export default function ResultsPage({
     }
     fetchResults();
   }, [quizId]);
-
-  useEffect(() => {
+useEffect(() => {
     if (!result) return;
-
-    const duration = 2000;
-    const animationEnd = Date.now() + duration;
-
-    const randomInRange = (min: number, max: number) => {
-      return Math.random() * (max - min) + min;
-    };
-
-    const frame = () => {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return;
-
-      const particleCount = 35 * (timeLeft / duration);
-
-      confetti({
-        particleCount,
-        startVelocity: 25,
-        spread: 300,
-        ticks: 150,
-        origin: {
-          x: randomInRange(0.1, 0.9),
-          y: Math.random() - 0.2
-        },
-        colors: ['#a78bfa', '#f472b6', '#60a5fa', '#34d399']
-      });
-
-      requestAnimationFrame(frame);
-    };
-
-    frame();
-
-    setTimeout(() => confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }), 300);
-    setTimeout(() => confetti({ particleCount: 35, spread: 80, origin: { x: 0.2, y: 0.6 } }), 800);
+ 
+    confetti({
+      particleCount: 500,
+      spread: 80,
+      origin: { y: 0.3, x: 0.3 },
+      colors: ['#a78bfa', '#60a5fa'],
+      ticks: 200,
+      startVelocity: 70,
+      gravity: 2.0,
+      decay: 0.92
+    });
+ 
+    confetti({
+      particleCount: 500,
+      spread: 80,
+      origin: { y: 0.3, x: 0.7 },
+      ticks: 200,
+      startVelocity: 70,
+      gravity: 2.0,
+      decay: 0.92,
+      colors: [ '#60a5fa', '#34d399'],
+    });
+ 
   }, [result]);
-
-//  useEffect(() => {
-//   if (!result) return;
-
-//   // Remove the continuous frame animation and keep only these 2 blasts:
-  
-//   // First main blast
-//   confetti({
-//     particleCount: 100,
-//     spread: 70,
-//     origin: { y: 0.6 },
-//     colors: ['#a78bfa', '#60a5fa', '#34d399'],
-//   });
-
-//   // Second main blast  
-//   setTimeout(() => {
-//     confetti({
-//       particleCount: 80, 
-//       spread: 60,
-//       origin: { y: 0.7 },
-//       colors: ['#f472b6', '#fbbf24'],
-//     });
-//   }, 400);
-
-// }, [result]);
-  
-// useEffect(() => {
-//   if (!result) return;
-
-//   // First blast - top left of result div (30% from left, 100px from top)
-//   confetti({
-//     particleCount: 200,
-//     angle: 85,
-//     spread: 80,
-//     origin: { x: 0.3, y: 0.1 }, // 30% from left, 100px from top (approx)
-//     startVelocity: 55,
-//     colors: ['#a78bfa', '#f472b6', '#60a5fa'],
-//     gravity: 0.8,
-//     scalar: 1.3,
-//     drift: 0
-//   });
-
-//   // Second blast - top right of result div (70% from left, 100px from top)
-//   setTimeout(() => {
-//     confetti({
-//       particleCount: 200,
-//       angle: 95,
-//       spread: 80,
-//       origin: { x: 0.7, y: 0.1 }, // 70% from left, 100px from top
-//       startVelocity: 55,
-//       colors: ['#34d399', '#fbbf24', '#60a5fa'],
-//       gravity: 0.8,
-//       scalar: 1.3,
-//       drift: 0
-//     });
-//   }, 400);
-
-// }, [result]);
 useEffect(() => {
     if (!showFeedback || !result?.performanceFeedback) return;
 
