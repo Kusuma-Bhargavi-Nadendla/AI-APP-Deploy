@@ -12,8 +12,8 @@ import { getCachedSubcategories, setCachedSubcategories } from "../../../../lib/
 import { getRandomColor } from "../../../_lib/utils";
 import { setCachedResults, getCachedSearchSubcategories } from "../../../../lib/searchCache"
 import { appDB } from "../../../../lib/appDataDB";
-import type {Subcategory, QuizLandingData,CacheInfo} from "../../../../lib/types"
-import type { PageProps} from "../../../../lib/types"
+import type { Subcategory, QuizLandingData, CacheInfo } from "../../../../lib/types"
+import type { PageProps } from "../../../../lib/types"
 
 function normalizeCategoryTitle(title: string): string {
   return title.trim().toLowerCase();
@@ -26,7 +26,7 @@ async function fetchSubcategories(
 ): Promise<{ subcategories: Subcategory[], cacheInfo: CacheInfo }> {
   const normalizedTitle = normalizeCategoryTitle(categoryTitle);
   if (!normalizedTitle) {
-    throw new Error("Invalid category title");
+    throw new Error(`Invalid category title:${categoryTitle}`);
   }
 
   if (!refresh) {
@@ -60,6 +60,7 @@ async function fetchSubcategories(
   });
 
   if (!res.ok) {
+
     throw new Error("Failed to fetch subcategories");
   }
 
@@ -100,8 +101,8 @@ export default function CategoryClient({ params }: PageProps) {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const [categoryTitle,setCategoryTitle]= useState("");
-  const [categoryDescription,setCategoryDescription]=useState("");
+  const [categoryTitle, setCategoryTitle] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
 
   const { ref, inView } = useInView({
     threshold: 0,
@@ -163,7 +164,7 @@ export default function CategoryClient({ params }: PageProps) {
               isNew: item.isNew,
               color: getRandomColor() || 'bg-white',
             }));
-            console.log("2 queries",searchQuery, currentQuery);
+            console.log("2 queries", searchQuery, currentQuery);
             // if (searchQuery === currentQuery) {
             setSubcategories(mappedSearchResults);
             // } else if (searchQuery.length === 0) {
@@ -183,16 +184,14 @@ export default function CategoryClient({ params }: PageProps) {
             }));
             await setCachedResults(query, cacheResults);
 
-            console.log("setting cache for ", query);
             setCacheInfo({ cached: false });
           }
         } catch (error) {
-          console.log("Search failed:", error);
           setError("Search failed. Please try again.");
         } finally {
           setIsLoading(false);
         }
-      }, 500);
+      }, 3000);
     } else if (query.length === 0) {
       setSearchQuery("");
       setIsLoading(true);
@@ -217,7 +216,7 @@ export default function CategoryClient({ params }: PageProps) {
       setSubcategories(data);
       setCacheInfo(info);
       setHasMore(data.length > 0);
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to load subcategories");
     } finally {
       setIsLoading(false);
@@ -239,7 +238,7 @@ export default function CategoryClient({ params }: PageProps) {
       } else {
         setSubcategories((prev) => [...prev, ...newCategories]);
       }
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to load more categories");
     } finally {
       setIsLoadingMore(false);
@@ -248,7 +247,6 @@ export default function CategoryClient({ params }: PageProps) {
 
   const handleRefresh = async () => {
     setIsLoading(true);
-    console.log("load2");
     await loadInitialSubcategories(true);
   };
 
@@ -258,7 +256,7 @@ export default function CategoryClient({ params }: PageProps) {
       const data = await appDB.getCurrentCategoryDetails(sessionId);
       setCategoryTitle(data.category);
       setCategoryDescription(data.categoryDescription);
-      console.log("got this data from indexdb:",data);
+      console.log("got this data from indexdb:", data);
     } else {
       console.log("Session ID not found from LS")
     }
@@ -266,9 +264,13 @@ export default function CategoryClient({ params }: PageProps) {
   }
 
   useEffect(() => {
-    console.log("load 1", categoryTitle)
-    loadInitialSubcategories();
-    loadCategoryDetails();
+    const loadData = async () => {
+      await loadCategoryDetails();
+      if (categoryTitle) {
+        await loadInitialSubcategories();
+      }
+    }
+    loadData();
   }, [categoryTitle]);
 
   useEffect(() => {
@@ -301,7 +303,6 @@ export default function CategoryClient({ params }: PageProps) {
   // const decodedCategoryTitle = decodeURIComponent(categoryTitle).replace(/-/g, " ");
 
   const handleStartTest = async (subcategory: Subcategory) => {
-    console.log("Starting test for:", subcategory.name);
     const quizData: QuizLandingData = {
       categoryId,
       categoryTitle: categoryTitle,
@@ -319,7 +320,7 @@ export default function CategoryClient({ params }: PageProps) {
       await appDB.updateSession(sessionId, {
         subcategory: subcategory.name,
         quizSlugId: quizId,
-        subcategoryDescription:subcategory.description
+        subcategoryDescription: subcategory.description
       });
     } else {
       console.warn("sessionid not found");

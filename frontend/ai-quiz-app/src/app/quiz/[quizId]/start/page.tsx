@@ -347,7 +347,7 @@ export default function QuizPage({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
-  const mediaCleanupDone = useRef(false); // Add this with other refs
+  const mediaCleanupDone = useRef(false); 
 
   const stopAllMedia = () => {
     if (mediaCleanupDone.current) {
@@ -356,34 +356,30 @@ export default function QuizPage({
     }
     mediaCleanupDone.current = true;
 
-    console.log("🛑 Stopping all media devices...");
 
-    // 1. Stop webcam stream
     if (webcamRef.current?.video?.srcObject) {
       const stream = webcamRef.current.video.srcObject as MediaStream;
       console.log(`Stopping ${stream.getTracks().length} media tracks`);
       stream.getTracks().forEach((track) => {
         console.log(`Stopping ${track.kind} track`);
-        track.stop(); // This actually stops the device
-        track.enabled = false; // Disable the track
+        track.stop();
+        track.enabled = false;
       });
       webcamRef.current.video.srcObject = null;
     }
 
-    // 2. Stop speech-to-text
     if (isRecording) {
       console.log("Stopping speech-to-text");
       stopSpeechToText();
     }
 
-    // 3. Stop audio context SAFELY
     if (audioContextRef.current) {
       console.log("AudioContext state:", audioContextRef.current.state);
       if (audioContextRef.current.state !== "closed") {
         audioContextRef.current
           .close()
           .then(() => {
-            console.log("✅ AudioContext closed successfully");
+            console.log("AudioContext closed successfully");
           })
           .catch((err) => {
             console.log("AudioContext close error:", err.message);
@@ -393,7 +389,6 @@ export default function QuizPage({
       }
     }
 
-    // 4. Clear all intervals
     if (audioIntervalRef.current) {
       clearInterval(audioIntervalRef.current);
       audioIntervalRef.current = null;
@@ -403,30 +398,9 @@ export default function QuizPage({
       proctoringIntervalRef.current = null;
     }
 
-    console.log("✅ Media cleanup completed");
+    console.log("Media cleanup completed");
   };
 
-  // const stopAllMedia = () => {
-  //   if (webcamRef.current?.video?.srcObject) {
-  //     const stream = webcamRef.current.video.srcObject as MediaStream;
-  //     stream.getTracks().forEach(track => track.stop());
-  //   }
-
-  //   if (isRecording) {
-  //     stopSpeechToText();
-  //   }
-
-  //   if (audioContextRef.current) {
-  //     audioContextRef.current.close();
-  //   }
-  //   if (audioIntervalRef.current) {
-  //     clearInterval(audioIntervalRef.current);
-  //   }
-
-  //   if (proctoringIntervalRef.current) {
-  //     clearInterval(proctoringIntervalRef.current);
-  //   }
-  // };
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       console.log("handle before called with status", isQuizCompleted);
