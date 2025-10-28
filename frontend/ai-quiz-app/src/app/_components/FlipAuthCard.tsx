@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -241,7 +242,7 @@ export default function FlipAuthCard() {
               }}
               className="text-cyan-600 hover:text-cyan-700 text-sm font-medium transition-colors w-full text-center"
             >
-              Don't have an account? Sign up
+              Don&apos;t have an account? Sign up
             </button>
           </div>
         </div>

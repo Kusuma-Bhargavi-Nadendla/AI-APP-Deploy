@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { openDB, IDBPDatabase } from 'idb';
 
 export type SearchCacheCategory = {

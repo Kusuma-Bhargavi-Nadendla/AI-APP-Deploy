@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 "use client";
 
@@ -7,21 +8,38 @@ import { useRouter } from "next/navigation";
 import Webcam from "react-webcam";
 import useSpeechToText, { ResultType } from "react-hook-speech-to-text";
 import Question from "../../../_components/QuizQuestion";
-import { Fullscreen, AlertTriangle, X, Volume2, Copy, Camera, Mic, User } from "lucide-react";
+import {
+  Fullscreen,
+  AlertTriangle,
+  X,
+  Volume2,
+  Copy,
+  Camera,
+  Mic,
+  User,
+} from "lucide-react";
 import { PreparingQuizLoader } from "../../../_lib/PreparingQuizLoader";
 import { EvaluatingQuizLoader } from "../../../_lib/EvaluationLoader";
 import { appDB } from "../../../../lib/appDataDB";
-import type {SessionData,TimeSettings, AIQuestion} from "../../../../lib/types"
+import type {
+  SessionData,
+  TimeSettings,
+  AIQuestion,
+} from "../../../../lib/types";
 
-
-
-export default function QuizPage({ params }: { params: Promise<{ quizId: string }> }) {
+export default function QuizPage({
+  params,
+}: {
+  params: Promise<{ quizId: string }>;
+}) {
   const { quizId } = use(params);
   const router = useRouter();
 
-  const [currentQuestion, setCurrentQuestion] = useState<AIQuestion | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<AIQuestion | null>(
+    null
+  );
   const [userAnswer, setUserAnswer] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [quizSession, setQuizSession] = useState<SessionData | null>(null);
   const [progress, setProgress] = useState({ current: 1, total: 3 });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +51,9 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   const hasStartedQuiz = useRef(false);
   const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [proctoringStatus, setProctoringStatus] = useState("Initializing camera...");
+  const [proctoringStatus, setProctoringStatus] = useState(
+    "Initializing camera..."
+  );
 
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [cameraActive, setCameraActive] = useState(true);
@@ -43,7 +63,6 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
 
   useEffect(() => {
     let isMounted = true;
@@ -101,7 +120,9 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
           showWarning("No face detected - Please position yourself in frame");
         } else if (faceCount > 1) {
           setProctoringStatus("Multiple faces detected");
-          showWarning("Multiple faces detected - Only one person should be in frame");
+          showWarning(
+            "Multiple faces detected - Only one person should be in frame"
+          );
         } else {
           setProctoringStatus("Verified");
         }
@@ -133,12 +154,15 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v')) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "v")) {
         e.preventDefault();
         handleViolation("Copy/paste shortcut");
         showWarning("Copy/paste shortcuts are disabled");
       }
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))) {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J"))
+      ) {
         e.preventDefault();
         handleViolation("Dev tools access");
         showWarning("Developer tools are disabled");
@@ -151,18 +175,18 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       showWarning("Right-click is disabled");
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    document.addEventListener('copy', handleCopyPaste);
-    document.addEventListener('paste', handleCopyPaste);
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("copy", handleCopyPaste);
+    document.addEventListener("paste", handleCopyPaste);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("contextmenu", handleContextMenu);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('copy', handleCopyPaste);
-      document.removeEventListener('paste', handleCopyPaste);
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("copy", handleCopyPaste);
+      document.removeEventListener("paste", handleCopyPaste);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("contextmenu", handleContextMenu);
       if (warningTimeoutRef.current) {
         clearTimeout(warningTimeoutRef.current);
       }
@@ -174,8 +198,10 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       try {
         await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        const mics = devices.filter(device => device.kind === 'audioinput');
+        const cameras = devices.filter(
+          (device) => device.kind === "videoinput"
+        );
+        const mics = devices.filter((device) => device.kind === "audioinput");
 
         setCameraActive(cameras.length > 0);
         setMicActive(mics.length > 0);
@@ -190,8 +216,12 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
         }
       } catch (err) {
         console.error("Device monitoring error:", err);
-        showWarning("Device disconnected.Please give access to avoid consequences.")
-        handleViolation("Device disconnected.Please give access to avoid consequences.")
+        showWarning(
+          "Device disconnected.Please give access to avoid consequences."
+        );
+        handleViolation(
+          "Device disconnected.Please give access to avoid consequences."
+        );
       }
     };
     const deviceInterval = setInterval(monitorDevices, 5000);
@@ -202,7 +232,9 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   useEffect(() => {
     const startAudioMonitoring = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         audioContextRef.current = new AudioContext();
         analyserRef.current = audioContextRef.current.createAnalyser();
         const source = audioContextRef.current.createMediaStreamSource(stream);
@@ -232,15 +264,17 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
     return () => {
       if (audioIntervalRef.current) {
         clearInterval(audioIntervalRef.current);
+        audioIntervalRef.current = null;
       }
-      // if (audioContextRef.current) {
-      //   audioContextRef.current.close();
-      // }
+      if (proctoringIntervalRef.current) {
+        clearInterval(proctoringIntervalRef.current);
+        proctoringIntervalRef.current = null;
+      }
     };
   }, []);
 
   const handleViolation = (type: string) => {
-    setViolationCount(prev => {
+    setViolationCount((prev) => {
       const newCount = prev + 1;
       console.log(`Violation #${newCount}: ${type}`);
       return newCount;
@@ -272,12 +306,14 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   useEffect(() => {
     if (!results?.length) return;
 
-    const allTranscripts = results.map(result => {
-      if (typeof result !== "string" && "transcript" in result) {
-        return result.transcript || "";
-      }
-      return result as string;
-    }).filter(transcript => transcript.trim());
+    const allTranscripts = results
+      .map((result) => {
+        if (typeof result !== "string" && "transcript" in result) {
+          return result.transcript || "";
+        }
+        return result as string;
+      })
+      .filter((transcript) => transcript.trim());
 
     const fullTranscript = allTranscripts.join(" ");
 
@@ -301,69 +337,74 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     enterFullscreen();
 
-
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      console.log(1);
+      stopSpeechToText();
+      setCameraActive(false);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
   const mediaCleanupDone = useRef(false); // Add this with other refs
 
-const stopAllMedia = () => {
-  if (mediaCleanupDone.current) {
-    console.log("Media cleanup already completed");
-    return;
-  }
-  mediaCleanupDone.current = true;
-  
-  console.log("🛑 Stopping all media devices...");
-
-  // 1. Stop webcam stream
-  if (webcamRef.current?.video?.srcObject) {
-    const stream = webcamRef.current.video.srcObject as MediaStream;
-    console.log(`Stopping ${stream.getTracks().length} media tracks`);
-    stream.getTracks().forEach(track => {
-      console.log(`Stopping ${track.kind} track`);
-      track.stop(); // This actually stops the device
-      track.enabled = false; // Disable the track
-    });
-    webcamRef.current.video.srcObject = null;
-  }
-
-  // 2. Stop speech-to-text
-  if (isRecording) {
-    console.log("Stopping speech-to-text");
-    stopSpeechToText();
-  }
-
-  // 3. Stop audio context SAFELY
-  if (audioContextRef.current) {
-    console.log("AudioContext state:", audioContextRef.current.state);
-    if (audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close().then(() => {
-        console.log("✅ AudioContext closed successfully");
-      }).catch(err => {
-        console.log("AudioContext close error:", err.message);
-      });
-    } else {
-      console.log("AudioContext already closed");
+  const stopAllMedia = () => {
+    if (mediaCleanupDone.current) {
+      console.log("Media cleanup already completed");
+      return;
     }
-  }
+    mediaCleanupDone.current = true;
 
-  // 4. Clear all intervals
-  if (audioIntervalRef.current) {
-    clearInterval(audioIntervalRef.current);
-    audioIntervalRef.current = null;
-  }
-  if (proctoringIntervalRef.current) {
-    clearInterval(proctoringIntervalRef.current);
-    proctoringIntervalRef.current = null;
-  }
+    console.log("🛑 Stopping all media devices...");
 
-  console.log("✅ Media cleanup completed");
-};
+    // 1. Stop webcam stream
+    if (webcamRef.current?.video?.srcObject) {
+      const stream = webcamRef.current.video.srcObject as MediaStream;
+      console.log(`Stopping ${stream.getTracks().length} media tracks`);
+      stream.getTracks().forEach((track) => {
+        console.log(`Stopping ${track.kind} track`);
+        track.stop(); // This actually stops the device
+        track.enabled = false; // Disable the track
+      });
+      webcamRef.current.video.srcObject = null;
+    }
+
+    // 2. Stop speech-to-text
+    if (isRecording) {
+      console.log("Stopping speech-to-text");
+      stopSpeechToText();
+    }
+
+    // 3. Stop audio context SAFELY
+    if (audioContextRef.current) {
+      console.log("AudioContext state:", audioContextRef.current.state);
+      if (audioContextRef.current.state !== "closed") {
+        audioContextRef.current
+          .close()
+          .then(() => {
+            console.log("✅ AudioContext closed successfully");
+          })
+          .catch((err) => {
+            console.log("AudioContext close error:", err.message);
+          });
+      } else {
+        console.log("AudioContext already closed");
+      }
+    }
+
+    // 4. Clear all intervals
+    if (audioIntervalRef.current) {
+      clearInterval(audioIntervalRef.current);
+      audioIntervalRef.current = null;
+    }
+    if (proctoringIntervalRef.current) {
+      clearInterval(proctoringIntervalRef.current);
+      proctoringIntervalRef.current = null;
+    }
+
+    console.log("✅ Media cleanup completed");
+  };
 
   // const stopAllMedia = () => {
   //   if (webcamRef.current?.video?.srcObject) {
@@ -388,34 +429,34 @@ const stopAllMedia = () => {
   // };
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      console.log("handle before called with status", isQuizCompleted)
+      console.log("handle before called with status", isQuizCompleted);
       if (!isQuizCompleted) {
         event.preventDefault();
-        event.returnValue = '';
+        event.returnValue = "";
         pauseQuizSessionSync();
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [isQuizCompleted, progress]);
 
   const pauseQuizSessionSync = async () => {
     console.log("trying to pass the session");
-    const sessionId = localStorage.getItem('sessionId');
+    const sessionId = localStorage.getItem("sessionId");
     if (!sessionId || isQuizCompleted) return;
 
     await appDB.updateSession(sessionId, {
       status: "paused",
-      currentQuestionIndex: progress.current
-    })
+      currentQuestionIndex: progress.current,
+    });
     console.log("updating indexdb", progress.current);
     localStorage.setItem("progress", JSON.stringify(progress));
-    localStorage.removeItem('sessionId');
-    router.replace('/history')
+    // localStorage.removeItem("sessionId");
+    router.replace("/history");
   };
 
   useEffect(() => {
@@ -428,122 +469,135 @@ const stopAllMedia = () => {
   }, [isRecording]);
 
   useEffect(() => {
-    if (hasStartedQuiz.current) return;
+    const start = async () => {
+      if (hasStartedQuiz.current) return;
 
-    const startQuiz = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Not logged in");
+      const startQuiz = async () => {
+        console.log(isLoading);
+        if (isLoading) {
+          return;
+        }
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) throw new Error("Not logged in");
 
-        const sessionId = localStorage.getItem('sessionId');
-        if (sessionId) {
-          const sessionLoadedData = await appDB.getSession(sessionId);
-          console.log("loaded from indexdb", sessionLoadedData, sessionLoadedData?.userId);
+          const sessionId = localStorage.getItem("sessionId");
+          if (sessionId) {
+            const sessionLoadedData = await appDB.getSession(sessionId);
+            console.log(
+              "loaded from indexdb",
+              sessionLoadedData,
+              sessionLoadedData?.userId
+            );
 
+            if (!sessionLoadedData) {
+              throw new Error("Session Not found.");
+            }
+            const quizData: SessionData = sessionLoadedData;
+            setQuizSession(quizData);
+            hasStartedQuiz.current = true;
 
-          if (!sessionLoadedData) {
-            throw new Error("Session Not found.")
-          }
-          const quizData: SessionData = sessionLoadedData;
-          setQuizSession(quizData);
-          hasStartedQuiz.current = true;
+            const categoryId = localStorage.getItem("categoryId") ?? "";
+            const quizStatus = quizData.status;
 
-          const categoryId = localStorage.getItem('categoryId') ?? "";
-          const quizStatus = quizData.status;
+            let res;
+            if (quizStatus === "preview") {
+              console.log("calling to start quiz");
+              setIsLoading(true);
+              res = await fetch("http://localhost:5000/quiz/start", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  userId: quizData.userId,
+                  categoryId: categoryId,
+                  categoryTitle: quizData.category,
+                  subcategoryTitle: quizData.subcategory,
+                  questionsCount: quizData.questionsCount,
+                }),
+              });
+            } else {
+              console.log("calling to resume quiz");
+              res = await fetch("http://localhost:5000/quiz/resume", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  userId: quizData.userId,
+                  quizId: quizData.quizId,
+                }),
+              });
+            }
 
-          let res;
-          if (quizStatus === "preview") {
-            console.log("calling to start quiz");
-            res = await fetch("http://localhost:5000/quiz/start", {
-              method: "POST",
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                userId: quizData.userId,
-                categoryId: categoryId,
-                categoryTitle: quizData.category,
-                subcategoryTitle: quizData.subcategory,
-                questionsCount: quizData.questionsCount,
-              }),
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.error || "Failed to start quiz");
+            }
+
+            const response = await res.json();
+            if (!response.success) {
+              throw new Error("Invalid quiz start response");
+            }
+
+            const data = response.data;
+            setCurrentQuestion(data.question);
+
+            setQuizSession((prev) => {
+              if (!prev) {
+                throw new Error("session not found");
+              }
+              return {
+                ...prev,
+                quizId: data.quizId,
+              };
+            });
+
+            await appDB.updateSession(sessionId, {
+              quizId: data.quizId,
+              status: "in-progress",
+              currentQuestionIndex: data.currentQuestionNumber,
+            });
+
+            setProgress({
+              current: data.currentQuestionNumber,
+              total: quizData.questionsCount,
             });
           } else {
-             console.log("calling to resume quiz");
-            res = await fetch("http://localhost:5000/quiz/resume", {
-              method: "POST",
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                userId: quizData.userId,
-                quizId: quizData.quizId
-              }),
-            });
+            console.warn("sessionid not found");
+            throw new Error("Session not found. Please Try again.");
           }
-
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || "Failed to start quiz");
-          }
-
-          const response = await res.json();
-          if (!response.success) {
-            throw new Error("Invalid quiz start response");
-          }
-
-
-          const data = response.data;
-          setCurrentQuestion(data.question);
-
-          setQuizSession((prev) => {
-            if (!prev) {
-              throw new Error("session not found")
-            }
-            return {
-              ...prev,
-              quizId: data.quizId
-            }
-          })
-
-
-          await appDB.updateSession(sessionId, ({
-            quizId: data.quizId,
-            status: 'in-progress',
-            currentQuestionIndex: data.currentQuestionNumber
-          }))
-
-
-          setProgress({ current: data.currentQuestionNumber, total: quizData.questionsCount });
-
-        } else {
-          console.warn("sessionid not found");
-          throw new Error("Session not found. Please Try again.")
+        } catch (err: any) {
+          console.error("Start quiz error:", err);
+          alert(`Failed to start quiz: ${err.message}`);
+          router.push("/categories");
+        } finally {
+          setIsLoading(false);
         }
+      };
 
-      } catch (err: any) {
-        console.error("Start quiz error:", err);
-        alert(`Failed to start quiz: ${err.message}`);
-        router.push("/categories");
-      } finally {
-        setIsLoading(false);
-      }
+      await startQuiz();
     };
-
-    startQuiz();
+    start();
   }, []);
 
   const handleAnswerSubmit = async (answer: string) => {
-    if (!userAnswer.trim() || !currentQuestion || !quizSession || isSubmitting) {
+    if (
+      !userAnswer.trim() ||
+      !currentQuestion ||
+      !quizSession ||
+      isSubmitting
+    ) {
       return;
     }
 
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      const categoryId = localStorage.getItem('categoryId') ?? "";
+      const categoryId = localStorage.getItem("categoryId") ?? "";
       const payload = {
         quizData: {
           quizId: quizSession.quizId,
@@ -557,12 +611,12 @@ const stopAllMedia = () => {
           questionText: currentQuestion.questionText,
           options: currentQuestion.options,
           questionType: currentQuestion.questionType,
-          difficultyLevel: currentQuestion.difficultyLevel
+          difficultyLevel: currentQuestion.difficultyLevel,
         },
         userAnswer: answer,
         progress: {
           current: progress.current,
-          total: progress.total
+          total: progress.total,
         },
         violations: violationCount,
       };
@@ -571,8 +625,8 @@ const stopAllMedia = () => {
       const res = await fetch("http://localhost:5000/quiz/submit-answer", {
         method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
@@ -588,15 +642,19 @@ const stopAllMedia = () => {
       if (result.quizCompleted) {
         setIsQuizCompleted(true);
 
-        const sessionId = localStorage.getItem('sessionId');
+        const sessionId = localStorage.getItem("sessionId");
         if (!sessionId) {
           throw new Error("Session not found. Please try again...");
         }
         const sessionLoadedData = await appDB.getSession(sessionId);
-        console.log("loaded from indexdb", sessionLoadedData, sessionLoadedData?.userId);
+        console.log(
+          "loaded from indexdb",
+          sessionLoadedData,
+          sessionLoadedData?.userId
+        );
 
         if (!sessionLoadedData) {
-          throw new Error("Session Not found.")
+          throw new Error("Session Not found.");
         }
 
         await appDB.updateSession(sessionId, {
@@ -604,21 +662,27 @@ const stopAllMedia = () => {
           currentQuestionIndex: sessionLoadedData.questionsCount,
           score: result.finalScore,
           endTime: new Date(),
-          performanceFeedback:result.finalFeedback
+          performanceFeedback: result.finalFeedback,
         });
         stopAllMedia();
         router.replace(`/results/${quizSession.quizId}`);
         return;
-      
       } else {
         setCurrentQuestion(result.nextQuestion);
         setProgress(result.progress);
-        setProgress({ current: result.progress.current, total: result.progress.total })
+        setProgress({
+          current: result.progress.current,
+          total: result.progress.total,
+        });
         console.log("questions progress after submit:", progress);
-        setQuizSession(prev => prev ? {
-          ...prev,
-          currentQuestionNumber: result.progress.current
-        } : null);
+        setQuizSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentQuestionNumber: result.progress.current,
+              }
+            : null
+        );
         setUserAnswer("");
         setResults([]);
       }
@@ -671,7 +735,8 @@ const stopAllMedia = () => {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
               <div className="text-amber-800 text-sm">
-                <span className="font-semibold">Fullscreen Required:</span> Please enter fullscreen mode to continue
+                <span className="font-semibold">Fullscreen Required:</span>{" "}
+                Please enter fullscreen mode to continue
               </div>
             </div>
             <button
@@ -691,7 +756,11 @@ const stopAllMedia = () => {
             {currentQuestion && (
               <Question
                 questionText={currentQuestion.questionText}
-                questionType={currentQuestion.questionType === "descriptive" ? "descriptive" : "multiple_choice"}
+                questionType={
+                  currentQuestion.questionType === "descriptive"
+                    ? "descriptive"
+                    : "multiple_choice"
+                }
                 options={currentQuestion.options}
                 mode="quiz"
                 currentQuestion={progress.current}
@@ -710,9 +779,13 @@ const stopAllMedia = () => {
             <div className="sticky top-8 space-y-4">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Proctoring Status</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Proctoring Status
+                  </h3>
                   <div className="px-2 py-1 bg-red-50 border border-red-200 rounded">
-                    <span className="text-xs font-medium text-red-700">Violations: {violationCount}</span>
+                    <span className="text-xs font-medium text-red-700">
+                      Violations: {violationCount}
+                    </span>
                   </div>
                 </div>
 
@@ -720,34 +793,59 @@ const stopAllMedia = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-blue-500" />
-                      <span className="text-xs text-gray-600">Face Detection</span>
+                      <span className="text-xs text-gray-600">
+                        Face Detection
+                      </span>
                     </div>
-                    <div className={`text-xs font-medium ${proctoringStatus === "Verified" ? "text-green-600" : "text-red-600"
-                      }`}>
+                    <div
+                      className={`text-xs font-medium ${
+                        proctoringStatus === "Verified"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
                       {proctoringStatus}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Camera className={`h-4 w-4 ${cameraActive ? "text-green-500" : "text-red-500"}`} />
+                      <Camera
+                        className={`h-4 w-4 ${
+                          cameraActive ? "text-green-500" : "text-red-500"
+                        }`}
+                      />
                       <span className="text-xs text-gray-600">Camera</span>
                     </div>
-                    <div className={`w-2 h-2 rounded-full ${cameraActive ? "bg-green-500" : "bg-red-500"}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        cameraActive ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Mic className={`h-4 w-4 ${micActive ? "text-green-500" : "text-red-500"}`} />
+                      <Mic
+                        className={`h-4 w-4 ${
+                          micActive ? "text-green-500" : "text-red-500"
+                        }`}
+                      />
                       <span className="text-xs text-gray-600">Microphone</span>
                     </div>
-                    <div className={`w-2 h-2 rounded-full ${micActive ? "bg-green-500" : "bg-red-500"}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        micActive ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Volume2 className="h-4 w-4 text-purple-500" />
-                      <span className="text-xs text-gray-600">Audio Monitor</span>
+                      <span className="text-xs text-gray-600">
+                        Audio Monitor
+                      </span>
                     </div>
                     <div className="w-2 h-2 rounded-full bg-green-500" />
                   </div>
@@ -763,26 +861,36 @@ const stopAllMedia = () => {
               </div>
 
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden relative">
-                <Webcam
-                  audio={false}
-                  mirrored
-                  ref={webcamRef}
-                  className="w-full h-48 object-cover"
-                  screenshotFormat="image/jpeg"
-                  videoConstraints={{
-                    width: 256,
-                    height: 256,
-                    facingMode: "user",
-                  }}
-                />
+                {cameraActive && (
+                  <Webcam
+                    audio={false}
+                    mirrored
+                    ref={webcamRef}
+                    className="w-full h-48 object-cover"
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={{
+                      width: 256,
+                      height: 256,
+                      facingMode: "user",
+                    }}
+                  />
+                )}
 
                 <div className="absolute top-3 left-3">
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${proctoringStatus === "Verified"
-                    ? "bg-green-500/20 text-green-700 border-green-300"
-                    : "bg-red-500/20 text-red-700 border-red-300"
-                    }`}>
-                    <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${proctoringStatus === "Verified" ? "bg-green-500" : "bg-red-500"
-                      }`}></span>
+                  <div
+                    className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${
+                      proctoringStatus === "Verified"
+                        ? "bg-green-500/20 text-green-700 border-green-300"
+                        : "bg-red-500/20 text-red-700 border-red-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full mr-1.5 ${
+                        proctoringStatus === "Verified"
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
+                    ></span>
                     {proctoringStatus}
                   </div>
                 </div>
@@ -790,13 +898,21 @@ const stopAllMedia = () => {
                 <div className="p-3 bg-gray-50 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${isRecording ? "bg-red-500 animate-pulse" : "bg-green-500"}`} />
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          isRecording
+                            ? "bg-red-500 animate-pulse"
+                            : "bg-green-500"
+                        }`}
+                      />
                       <span className="text-xs text-gray-600">
                         {isRecording ? "Recording Audio" : "Mic Ready"}
                       </span>
                     </div>
                     <div className="text-xs text-gray-500">
-                      {violationCount > 0 ? `${violationCount} violations` : "No violations"}
+                      {violationCount > 0
+                        ? `${violationCount} violations`
+                        : "No violations"}
                     </div>
                   </div>
                 </div>
@@ -811,7 +927,10 @@ const stopAllMedia = () => {
                 </div>
               )}
 
-              {(proctoringStatus === "No face detected" || proctoringStatus === "Multiple faces detected" || !cameraActive || !micActive) && (
+              {(proctoringStatus === "No face detected" ||
+                proctoringStatus === "Multiple faces detected" ||
+                !cameraActive ||
+                !micActive) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div className="flex items-start gap-2 text-yellow-800 text-xs">
                     <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
@@ -820,8 +939,10 @@ const stopAllMedia = () => {
                       <div className="mt-1">
                         {!cameraActive && "• Camera disconnected\n"}
                         {!micActive && "• Microphone disconnected\n"}
-                        {proctoringStatus === "No face detected" && "• Face not detected\n"}
-                        {proctoringStatus === "Multiple faces detected" && "• Multiple faces detected"}
+                        {proctoringStatus === "No face detected" &&
+                          "• Face not detected\n"}
+                        {proctoringStatus === "Multiple faces detected" &&
+                          "• Multiple faces detected"}
                       </div>
                     </div>
                   </div>
@@ -836,7 +957,6 @@ const stopAllMedia = () => {
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 backdrop-blur-sm">
           <EvaluatingQuizLoader />
         </div>
-
       )}
     </div>
   );

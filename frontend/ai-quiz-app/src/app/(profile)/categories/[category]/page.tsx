@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, use, useRef } from "react";
@@ -443,7 +444,7 @@ export default function CategoryClient({ params }: PageProps) {
                       All Paths Explored
                     </h3>
                     <p className="text-slate-600 text-sm">
-                      You've discovered all available learning paths
+                      You&apos;ve discovered all available learning paths
                     </p>
                   </div>
                 </div>

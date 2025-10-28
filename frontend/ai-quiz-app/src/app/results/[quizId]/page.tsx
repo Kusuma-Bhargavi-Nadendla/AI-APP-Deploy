@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { use, useEffect, useState } from "react";
@@ -75,42 +76,31 @@ export default function ResultsPage({
     fetchResults();
   }, [quizId]);
 
-  useEffect(() => {
-    if (!result) return;
+ useEffect(() => {
+   if (!result) return;
 
-    const duration = 2000;
-    const animationEnd = Date.now() + duration;
+   confetti({
+     particleCount: 500,
+     spread: 80,
+     origin: { y: 0.3, x: 0.3 },
+     colors: ["#a78bfa", "#60a5fa"],
+     ticks: 200,
+     startVelocity: 70,
+     gravity: 2.0,
+     decay: 0.92,
+   });
 
-    const randomInRange = (min: number, max: number) => {
-      return Math.random() * (max - min) + min;
-    };
-
-    const frame = () => {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return;
-
-      const particleCount = 35 * (timeLeft / duration);
-
-      confetti({
-        particleCount,
-        startVelocity: 25,
-        spread: 300,
-        ticks: 150,
-        origin: {
-          x: randomInRange(0.1, 0.9),
-          y: Math.random() - 0.2
-        },
-        colors: ['#a78bfa', '#f472b6', '#60a5fa', '#34d399']
-      });
-
-      requestAnimationFrame(frame);
-    };
-
-    frame();
-
-    setTimeout(() => confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }), 300);
-    setTimeout(() => confetti({ particleCount: 35, spread: 80, origin: { x: 0.2, y: 0.6 } }), 800);
-  }, [result]);
+   confetti({
+     particleCount: 500,
+     spread: 80,
+     origin: { y: 0.3, x: 0.7 },
+     ticks: 200,
+     startVelocity: 70,
+     gravity: 2.0,
+     decay: 0.92,
+     colors: ["#60a5fa", "#34d399"],
+   });
+ }, [result]);
 
 //  useEffect(() => {
 //   if (!result) return;
@@ -386,7 +376,7 @@ useEffect(() => {
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 mb-2">
             Amazing Work!
           </h1>
-          <p className="text-slate-600 text-sm">Here's how you performed</p>
+          <p className="text-slate-600 text-sm">Here&apos;s how you performed</p>
         </div>
 
         <div className="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl p-8 shadow-sm mb-6">
